@@ -11,6 +11,7 @@ function App() {
   const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
   const [manualSearch, setManualSearch] = useState('');
   const [manualCopy, setManualCopy] = useState('');
+  const [aiPolish, setAiPolish] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   const [error, setError] = useState('');
@@ -36,16 +37,16 @@ function App() {
       let searchTerm = '';
       let adCopy = '';
 
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
       if (mode === 'AUTO') {
         if (!query) {
           setError('Please enter a prompt');
           setLoading(false);
           return;
         }
-        // 1. Get AI Analysis from Gemini
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
+        
         const aiPrompt = `Analyze this business/idea prompt: "${query}". 
         Return a JSON object with:
         1. "searchTerm": A single effective image search term for Pexels.
@@ -66,7 +67,14 @@ function App() {
           return;
         }
         searchTerm = manualSearch;
-        adCopy = manualCopy;
+        
+        if (aiPolish) {
+          const aiPrompt = `Turn this ad idea into a short, punchy headline (max 10 words): "${manualCopy}"`;
+          const aiResult = await model.generateContent(aiPrompt);
+          adCopy = aiResult.response.text().trim().replace(/^"|"$/g, '');
+        } else {
+          adCopy = manualCopy;
+        }
       }
 
       // 2. Search Pexels
@@ -120,19 +128,29 @@ function App() {
             onKeyDown={(e) => e.key === 'Enter' && generateAd()}
           />
         ) : (
-          <div className="manual-fields">
-            <input 
-              type="text" 
-              value={manualSearch} 
-              onChange={(e) => setManualSearch(e.target.value)}
-              placeholder="Image Search (e.g. Mars)"
-            />
-            <input 
-              type="text" 
-              value={manualCopy} 
-              onChange={(e) => setManualCopy(e.target.value)}
-              placeholder="Ad Copy (e.g. Ice Cream on Mars)"
-            />
+          <div className="manual-container">
+            <div className="manual-fields">
+              <input 
+                type="text" 
+                value={manualSearch} 
+                onChange={(e) => setManualSearch(e.target.value)}
+                placeholder="Image Search (e.g. Mars)"
+              />
+              <input 
+                type="text" 
+                value={manualCopy} 
+                onChange={(e) => setManualCopy(e.target.value)}
+                placeholder="Ad Copy Hook (e.g. Ice Cream on Mars)"
+              />
+            </div>
+            <label className="checkbox-label">
+              <input 
+                type="checkbox" 
+                checked={aiPolish} 
+                onChange={(e) => setAiPolish(e.target.checked)} 
+              />
+              AI Polish Copy
+            </label>
           </div>
         )}
         <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>

@@ -48,14 +48,31 @@ h1 {
   border-color: #fff;
 }
 
-.manual-fields {
+.manual-container {
   display: flex;
+  flex-direction: column;
   flex: 1;
   gap: 10px;
 }
 
-.manual-fields input {
-  flex: 1;
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #888;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input {
+  flex: none;
+  width: auto;
+}
+
+.manual-fields {
+  display: flex;
+  gap: 10px;
 }
 
 .input-group {
