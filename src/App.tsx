@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import './App.css';
@@ -12,8 +12,20 @@ function App() {
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   const [error, setError] = useState('');
 
-  const generateAd = async () => {
-    if (!prompt) return;
+  // Handle URL params on mount
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlPrompt = searchParams.get('prompt');
+    if (urlPrompt) {
+      setPrompt(urlPrompt);
+      generateAd(urlPrompt);
+    }
+  }, []);
+
+  const generateAd = async (promptOverride?: string) => {
+    const query = promptOverride || prompt;
+    if (!query) return;
+    
     setLoading(true);
     setError('');
     setResult(null);
@@ -23,7 +35,7 @@ function App() {
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const aiPrompt = `Analyze this business/idea prompt: "${prompt}". 
+      const aiPrompt = `Analyze this business/idea prompt: "${query}". 
       Return a JSON object with:
       1. "searchTerm": A single effective image search term for Pexels.
       2. "adCopy": A short, punchy ad headline (max 10 words).
@@ -68,7 +80,7 @@ function App() {
           placeholder="What are we selling today?"
           onKeyDown={(e) => e.key === 'Enter' && generateAd()}
         />
-        <button onClick={generateAd} disabled={loading}>
+        <button onClick={() => generateAd()} disabled={loading}>
           {loading ? 'Simping...' : 'Generate'}
         </button>
       </div>
