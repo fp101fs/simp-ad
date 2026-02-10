@@ -69,9 +69,16 @@ function App() {
         searchTerm = manualSearch;
         
         if (aiPolish) {
-          const aiPrompt = `Turn this ad idea into a short, punchy headline (max 10 words): "${manualCopy}"`;
+          const aiPrompt = `Refine this ad copy idea: "${manualCopy}".
+          Return a JSON object with:
+          1. "adCopy": A single short, punchy ad headline (max 10 words).
+          Return ONLY the JSON.`;
+
           const aiResult = await model.generateContent(aiPrompt);
-          adCopy = aiResult.response.text().trim().replace(/^"|"$/g, '');
+          const aiResponse = aiResult.response.text();
+          const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          adCopy = parsed.adCopy;
         } else {
           adCopy = manualCopy;
         }
