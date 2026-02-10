@@ -21,9 +21,7 @@ function App() {
     try {
       // 1. Get AI Analysis from Gemini
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      // Using gemini-1.5-flash for speed/efficiency, but user mentioned 2.5-pro. 
-      // I will use gemini-1.5-pro which is more stable for complex prompts.
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const aiPrompt = `Analyze this business/idea prompt: "${prompt}". 
       Return a JSON object with:
