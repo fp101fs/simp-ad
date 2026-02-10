@@ -17,6 +17,47 @@ h1 {
   margin-bottom: 2rem;
 }
 
+.mode-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.5rem;
+}
+
+.mode-toggle button {
+  padding: 8px 20px;
+  border-radius: 0;
+  background: #1a1a1a;
+  color: #666;
+  border: 1px solid #444;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.mode-toggle button:first-child {
+  border-radius: 20px 0 0 20px;
+}
+
+.mode-toggle button:last-child {
+  border-radius: 0 20px 20px 0;
+}
+
+.mode-toggle button.active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.manual-fields {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+}
+
+.manual-fields input {
+  flex: 1;
+}
+
 .input-group {
   display: flex;
   gap: 10px;

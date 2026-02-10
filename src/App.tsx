@@ -8,6 +8,9 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 function App() {
   const [prompt, setPrompt] = useState('');
+  const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
+  const [manualSearch, setManualSearch] = useState('');
+  const [manualCopy, setManualCopy] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   const [error, setError] = useState('');
@@ -24,27 +27,47 @@ function App() {
 
   const generateAd = async (promptOverride?: string) => {
     const query = promptOverride || prompt;
-    if (!query) return;
     
     setLoading(true);
     setError('');
     setResult(null);
 
     try {
-      // 1. Get AI Analysis from Gemini
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      let searchTerm = '';
+      let adCopy = '';
 
-      const aiPrompt = `Analyze this business/idea prompt: "${query}". 
-      Return a JSON object with:
-      1. "searchTerm": A single effective image search term for Pexels.
-      2. "adCopy": A short, punchy ad headline (max 10 words).
-      Return ONLY the JSON.`;
+      if (mode === 'AUTO') {
+        if (!query) {
+          setError('Please enter a prompt');
+          setLoading(false);
+          return;
+        }
+        // 1. Get AI Analysis from Gemini
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-      const aiResult = await model.generateContent(aiPrompt);
-      const aiResponse = aiResult.response.text();
-      const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-      const { searchTerm, adCopy } = JSON.parse(cleanJson);
+        const aiPrompt = `Analyze this business/idea prompt: "${query}". 
+        Return a JSON object with:
+        1. "searchTerm": A single effective image search term for Pexels.
+        2. "adCopy": A short, punchy ad headline (max 10 words).
+        Return ONLY the JSON.`;
+
+        const aiResult = await model.generateContent(aiPrompt);
+        const aiResponse = aiResult.response.text();
+        const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        searchTerm = parsed.searchTerm;
+        adCopy = parsed.adCopy;
+      } else {
+        // MANUAL mode
+        if (!manualSearch || !manualCopy) {
+          setError('Please fill in both fields');
+          setLoading(false);
+          return;
+        }
+        searchTerm = manualSearch;
+        adCopy = manualCopy;
+      }
 
       // 2. Search Pexels
       const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=1`, {
@@ -71,16 +94,48 @@ function App() {
     <div className="container">
       <h1>simp.ad</h1>
       <p className="subtitle">Instant AI Ads</p>
+
+      <div className="mode-toggle">
+        <button 
+          className={mode === 'AUTO' ? 'active' : ''} 
+          onClick={() => setMode('AUTO')}
+        >
+          AUTO
+        </button>
+        <button 
+          className={mode === 'MANUAL' ? 'active' : ''} 
+          onClick={() => setMode('MANUAL')}
+        >
+          MANUAL
+        </button>
+      </div>
       
       <div className="input-group">
-        <input 
-          type="text" 
-          value={prompt} 
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="What are we selling today?"
-          onKeyDown={(e) => e.key === 'Enter' && generateAd()}
-        />
-        <button onClick={() => generateAd()} disabled={loading}>
+        {mode === 'AUTO' ? (
+          <input 
+            type="text" 
+            value={prompt} 
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="What are we selling today?"
+            onKeyDown={(e) => e.key === 'Enter' && generateAd()}
+          />
+        ) : (
+          <div className="manual-fields">
+            <input 
+              type="text" 
+              value={manualSearch} 
+              onChange={(e) => setManualSearch(e.target.value)}
+              placeholder="Image Search (e.g. Mars)"
+            />
+            <input 
+              type="text" 
+              value={manualCopy} 
+              onChange={(e) => setManualCopy(e.target.value)}
+              placeholder="Ad Copy (e.g. Ice Cream on Mars)"
+            />
+          </div>
+        )}
+        <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>
           {loading ? 'Simping...' : 'Generate'}
         </button>
       </div>
