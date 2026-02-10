@@ -12,6 +12,8 @@ function App() {
   const [manualSearch, setManualSearch] = useState('');
   const [manualCopy, setManualCopy] = useState('');
   const [aiPolish, setAiPolish] = useState(true);
+  const [instaMode, setInstaMode] = useState(true);
+  const [format, setFormat] = useState('square');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   const [error, setError] = useState('');
@@ -169,7 +171,30 @@ function App() {
 
       {result && (
         <div className="ad-preview">
-          <div className="ad-container">
+          <div className="insta-controls">
+             <button 
+               className={`insta-toggle ${instaMode ? 'active' : ''}`}
+               onClick={() => setInstaMode(!instaMode)}
+             >
+               📸 Insta Mode {instaMode ? 'ON' : 'OFF'}
+             </button>
+             
+             {instaMode && (
+               <div className="format-pills">
+                 {['square', 'portrait', 'story', 'landscape'].map(f => (
+                   <button 
+                     key={f}
+                     className={format === f ? 'active' : ''}
+                     onClick={() => setFormat(f)}
+                   >
+                     {f.charAt(0).toUpperCase() + f.slice(1)}
+                   </button>
+                 ))}
+               </div>
+             )}
+          </div>
+
+          <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
             <img src={result.image} alt="Ad background" />
             <div className="overlay">
               <h2>{result.copy}</h2>
