@@ -2,11 +2,9 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
   background-color: #000;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -70,14 +68,8 @@ h1 {
   letter-spacing: 1px;
 }
 
-.mode-toggle button:first-child {
-  border-radius: 30px 0 0 30px;
-}
-
-.mode-toggle button:last-child {
-  border-radius: 0 30px 30px 0;
-}
-
+.mode-toggle button:first-child { border-radius: 30px 0 0 30px; }
+.mode-toggle button:last-child { border-radius: 0 30px 30px 0; }
 .mode-toggle button.active {
   background: #fff;
   color: #000;
@@ -104,9 +96,7 @@ input {
   transition: border-color 0.2s;
 }
 
-input:focus {
-  border-color: #ff0080;
-}
+input:focus { border-color: #ff0080; }
 
 .manual-container {
   display: flex;
@@ -130,10 +120,7 @@ input:focus {
   padding: 5px;
 }
 
-.checkbox-label input {
-  width: 22px;
-  height: 22px;
-}
+.checkbox-label input { width: 22px; height: 22px; }
 
 .primary-btn {
   width: 100%;
@@ -142,6 +129,9 @@ input:focus {
   font-size: 1.2rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+  background: #fff;
+  color: #000;
+  font-weight: bold;
 }
 
 .ad-preview {
@@ -150,9 +140,7 @@ input:focus {
   padding-bottom: 4rem;
 }
 
-.insta-controls {
-  margin-bottom: 1.5rem;
-}
+.insta-controls { margin-bottom: 1.5rem; }
 
 .insta-toggle {
   margin-bottom: 15px;
@@ -160,6 +148,15 @@ input:focus {
   padding: 10px 20px;
   border-radius: 30px;
   font-weight: 600;
+  background: transparent;
+  border: 1px solid #444;
+  color: #888;
+}
+
+.insta-toggle.active {
+  border-color: #ff0080;
+  color: #fff;
+  background: rgba(255, 0, 128, 0.1);
 }
 
 .format-pills {
@@ -176,6 +173,14 @@ input:focus {
 .format-pills button {
   padding: 10px 18px;
   font-size: 0.9rem;
+  background: transparent;
+  color: #666;
+  border-radius: 20px;
+}
+
+.format-pills button.active {
+  background: #333;
+  color: #fff;
 }
 
 .ad-container {
@@ -185,38 +190,19 @@ input:focus {
   overflow: hidden;
   box-shadow: 0 30px 60px rgba(0,0,0,0.6);
   background: #111;
+  margin: 0 auto;
 }
 
-.overlay h2 {
-  font-size: clamp(1.8rem, 8vw, 3.5rem);
-  line-height: 1.1;
-  padding: 20px;
-}
+.ratio-landscape { aspect-ratio: 16 / 9; }
+.ratio-square { aspect-ratio: 1 / 1; }
+.ratio-portrait { aspect-ratio: 4 / 5; }
+.ratio-story { aspect-ratio: 9 / 16; }
 
-.download-hint {
-  margin-top: 2rem;
-  width: 100%;
-  padding: 15px;
-  border-radius: 16px;
-  font-size: 1rem;
-}
-
-@media (min-width: 600px) {
-  .input-group {
-    flex-direction: row;
-  }
-  .manual-fields {
-    flex-direction: row;
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
+.ad-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .overlay {
@@ -229,32 +215,43 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 20px;
   text-align: center;
 }
 
 .overlay h2 {
-  font-size: 3rem;
+  font-size: clamp(1.8rem, 8vw, 3.5rem);
+  line-height: 1.1;
   font-weight: 800;
   color: white;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  text-shadow: 0 4px 15px rgba(0,0,0,0.6);
   margin: 0;
 }
 
 .download-hint {
-  margin-top: 1rem;
+  margin-top: 2rem;
+  width: 100%;
+  padding: 15px;
+  border-radius: 16px;
+  font-size: 1rem;
   background: transparent;
   color: #888;
-  font-size: 0.9rem;
   border: 1px solid #444;
 }
 
+.error { color: #ff4444; margin: 1rem 0; }
+
+@media (min-width: 600px) {
+  .input-group { flex-direction: row; }
+  .manual-fields { flex-direction: row; }
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @media print {
-  .input-group, h1, .subtitle, .download-hint { display: none; }
+  .input-group, h1, .subtitle, .download-hint, .insta-controls, .mode-toggle { display: none; }
   .ad-container { border-radius: 0; box-shadow: none; }
 }
