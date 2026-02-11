@@ -14,6 +14,8 @@ function App() {
   const [aiPolish, setAiPolish] = useState(true);
   const [instaMode, setInstaMode] = useState(true);
   const [format, setFormat] = useState('square');
+  const [fontSize, setFontSize] = useState('md');
+  const [fontFamily, setFontFamily] = useState('sans');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   const [error, setError] = useState('');
@@ -194,10 +196,35 @@ function App() {
              )}
           </div>
 
+          <div className="style-controls">
+            <div className="control-group">
+              <span className="control-label">Size</span>
+              <div className="pill-group">
+                {['sm', 'md', 'lg'].map(sz => (
+                  <button 
+                    key={sz} 
+                    className={fontSize === sz ? 'active' : ''} 
+                    onClick={() => setFontSize(sz)}
+                  >
+                    {sz.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="control-group">
+              <span className="control-label">Font</span>
+              <div className="pill-group">
+                <button className={fontFamily === 'sans' ? 'active' : ''} onClick={() => setFontFamily('sans')}>Sans</button>
+                <button className={fontFamily === 'serif' ? 'active' : ''} onClick={() => setFontFamily('serif')}>Serif</button>
+                <button className={fontFamily === 'display' ? 'active' : ''} onClick={() => setFontFamily('display')}>Bold</button>
+              </div>
+            </div>
+          </div>
+
           <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
             <img src={result.image} alt="Ad background" />
             <div className="overlay">
-              <h2>{result.copy}</h2>
+              <h2 className={`font-${fontFamily} size-${fontSize}`}>{result.copy}</h2>
             </div>
           </div>
           <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>

@@ -183,6 +183,61 @@ input:focus { border-color: #ff0080; }
   color: #fff;
 }
 
+.style-controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.control-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #555;
+  font-weight: bold;
+}
+
+.pill-group {
+  display: flex;
+  background: #111;
+  padding: 4px;
+  border-radius: 20px;
+  border: 1px solid #222;
+}
+
+.pill-group button {
+  background: transparent;
+  color: #666;
+  border: none;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+}
+
+.pill-group button.active {
+  background: #222;
+  color: #fff;
+}
+
+/* Font styles */
+.font-sans { font-family: 'Inter', sans-serif; }
+.font-serif { font-family: 'Playfair Display', serif; }
+.font-display { font-family: 'Space Grotesk', sans-serif; font-weight: 800; }
+
+.overlay h2.size-sm { font-size: clamp(1.2rem, 5vw, 2rem); }
+.overlay h2.size-md { font-size: clamp(1.8rem, 8vw, 3.5rem); }
+.overlay h2.size-lg { font-size: clamp(2.5rem, 12vw, 5rem); }
+
 .ad-container {
   position: relative;
   width: 100%;
