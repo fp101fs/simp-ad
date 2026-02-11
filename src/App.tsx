@@ -18,6 +18,13 @@ function App() {
   const [fontFamily, setFontFamily] = useState('sans');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
+  
+  // Thumbnail Logic
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [currentSearchTerm, setCurrentSearchTerm] = useState('');
+  const [searchPage, setSearchPage] = useState(1);
+  const [refreshingThumbs, setRefreshingThumbs] = useState(false);
+
   const [error, setError] = useState('');
 
   // Handle URL params on mount
@@ -30,12 +37,33 @@ function App() {
     }
   }, []);
 
+  const refreshThumbnails = async () => {
+    if (!currentSearchTerm) return;
+    setRefreshingThumbs(true);
+    try {
+      const nextPage = searchPage + 1;
+      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(currentSearchTerm)}&per_page=3&page=${nextPage}`, {
+        headers: { Authorization: PEXELS_API_KEY }
+      });
+      
+      if (pexelsRes.data.photos.length > 0) {
+        setThumbnails(pexelsRes.data.photos.map((p: any) => p.src.large2x));
+        setSearchPage(nextPage);
+      }
+    } catch (err) {
+      console.error("Failed to refresh thumbs", err);
+    } finally {
+      setRefreshingThumbs(false);
+    }
+  };
+
   const generateAd = async (promptOverride?: string) => {
     const query = promptOverride || prompt;
     
     setLoading(true);
     setError('');
     setResult(null);
+    setThumbnails([]);
 
     try {
       let searchTerm = '';
@@ -88,8 +116,12 @@ function App() {
         }
       }
 
-      // 2. Search Pexels
-      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=1`, {
+      // Update search state
+      setCurrentSearchTerm(searchTerm);
+      setSearchPage(1);
+
+      // 2. Search Pexels (Fetch 4: 1 for main, 3 for thumbnails)
+      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=4&page=1`, {
         headers: { Authorization: PEXELS_API_KEY }
       });
 
@@ -98,6 +130,10 @@ function App() {
           image: pexelsRes.data.photos[0].src.large2x,
           copy: adCopy
         });
+        // Set thumbnails (items 1-3)
+        if (pexelsRes.data.photos.length > 1) {
+          setThumbnails(pexelsRes.data.photos.slice(1).map((p: any) => p.src.large2x));
+        }
       } else {
         setError('No relevant images found.');
       }
@@ -168,6 +204,30 @@ function App() {
           {loading ? 'Simping...' : 'Generate'}
         </button>
       </div>
+
+      {thumbnails.length > 0 && (
+        <div className="thumbnails-container">
+          <div className="thumbnails-row">
+            {thumbnails.map((thumb, idx) => (
+              <img 
+                key={idx} 
+                src={thumb} 
+                alt="Option" 
+                className="thumbnail" 
+                onClick={() => setResult(prev => prev ? { ...prev, image: thumb } : null)}
+              />
+            ))}
+          </div>
+          <button 
+            className="refresh-thumbs-btn" 
+            onClick={refreshThumbnails} 
+            disabled={refreshingThumbs}
+            title="Load new images"
+          >
+            {refreshingThumbs ? '...' : '↻'}
+          </button>
+        </div>
+      )}
 
       {error && <p className="error">{error}</p>}
 
