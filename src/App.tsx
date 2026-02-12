@@ -146,8 +146,10 @@ function App() {
         
         if (aiPolish) {
           const aiPrompt = `Refine this ad copy idea: "${manualCopy}".
+          The background image for this ad is based on the search term: "${manualSearch}".
+          Create a single short, punchy ad headline (max 10 words) that cleverly connects the image concept with the copy idea.
           Return a JSON object with:
-          1. "adCopy": A single short, punchy ad headline (max 10 words).
+          1. "adCopy": The refined headline.
           Return ONLY the JSON.`;
 
           const aiResult = await model.generateContent(aiPrompt);
