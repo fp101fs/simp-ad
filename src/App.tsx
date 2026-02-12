@@ -16,6 +16,10 @@ function App() {
   const [format, setFormat] = useState('square');
   const [fontSize, setFontSize] = useState('md');
   const [fontFamily, setFontFamily] = useState('sans');
+  const [textPos, setTextPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
   
@@ -36,6 +40,46 @@ function App() {
       generateAd(urlPrompt);
     }
   }, []);
+
+  // Drag Logic
+  const handleDragStart = (clientX: number, clientY: number) => {
+    setIsDragging(true);
+    setDragStart({ x: clientX - textPos.x, y: clientY - textPos.y });
+  };
+
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    setTextPos({
+      x: clientX - dragStart.x,
+      y: clientY - dragStart.y
+    });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Add global event listeners for drag
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    const onUp = () => handleDragEnd();
+
+    if (isDragging) {
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onTouchMove);
+      window.addEventListener('touchend', onUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [isDragging, dragStart]);
+
 
   const refreshThumbnails = async () => {
     if (!currentSearchTerm) return;
@@ -284,7 +328,19 @@ function App() {
           <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
             <img src={result.image} alt="Ad background" />
             <div className="overlay">
-              <h2 className={`font-${fontFamily} size-${fontSize}`}>{result.copy}</h2>
+              <h2 
+                className={`font-${fontFamily} size-${fontSize}`}
+                style={{ 
+                  transform: `translate(${textPos.x}px, ${textPos.y}px)`,
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                  userSelect: 'none',
+                  touchAction: 'none'
+                }}
+                onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
+                onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
+              >
+                {result.copy}
+              </h2>
             </div>
           </div>
           <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>
