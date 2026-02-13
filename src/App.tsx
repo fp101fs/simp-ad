@@ -6,6 +6,15 @@ import './App.css';
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
+interface TextBox {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  fontSize: 'sm' | 'md' | 'lg';
+  fontFamily: 'sans' | 'serif' | 'display';
+}
+
 function App() {
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
@@ -14,20 +23,22 @@ function App() {
   const [aiPolish, setAiPolish] = useState(true);
   const [instaMode, setInstaMode] = useState(true);
   const [format, setFormat] = useState('square');
-  const [fontSize, setFontSize] = useState('md');
-  const [fontFamily, setFontFamily] = useState('sans');
-  const [textPos, setTextPos] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  
+  // Per-box styles are now in the TextBox interface
+  const [globalFontSize, setGlobalFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [globalFontFamily, setGlobalFontFamily] = useState<'sans' | 'serif' | 'display'>('sans');
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ image: string; copy: string } | null>(null);
+  const [result, setResult] = useState<{ image: string; boxes: TextBox[] } | null>(null);
   
   // Thumbnail Logic
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
   const [searchPage, setSearchPage] = useState(1);
   const [refreshingThumbs, setRefreshingThumbs] = useState(false);
+
+  const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const [error, setError] = useState('');
 
@@ -42,63 +53,70 @@ function App() {
   }, []);
 
   // Drag Logic
-  const handleDragStart = (clientX: number, clientY: number) => {
-    setIsDragging(true);
-    setDragStart({ x: clientX - textPos.x, y: clientY - textPos.y });
+  const handleDragStart = (id: string, clientX: number, clientY: number) => {
+    const box = result?.boxes.find(b => b.id === id);
+    if (!box) return;
+    setActiveBoxId(id);
+    setDragStart({ x: clientX - box.x, y: clientY - box.y });
   };
 
   const handleDragMove = (clientX: number, clientY: number) => {
-    if (!isDragging) return;
-    setTextPos({
-      x: clientX - dragStart.x,
-      y: clientY - dragStart.y
+    if (!activeBoxId || !result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => 
+        b.id === activeBoxId 
+          ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y }
+          : b
+      )
     });
   };
 
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
+  const handleDragEnd = () => setActiveBoxId(null);
 
-  // Add global event listeners for drag
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
     const onTouchMove = (e: TouchEvent) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
     const onUp = () => handleDragEnd();
 
-    if (isDragging) {
+    if (activeBoxId) {
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onTouchMove);
+      window.addEventListener('touchmove', onTouchMove, { passive: false });
       window.addEventListener('touchend', onUp);
     }
-
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onUp);
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-  }, [isDragging, dragStart]);
+  }, [activeBoxId, dragStart]);
 
+  const updateBoxText = (id: string, text: string) => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b)
+    });
+  };
 
-  const refreshThumbnails = async () => {
-    if (!currentSearchTerm) return;
-    setRefreshingThumbs(true);
-    try {
-      const nextPage = searchPage + 1;
-      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(currentSearchTerm)}&per_page=3&page=${nextPage}`, {
-        headers: { Authorization: PEXELS_API_KEY }
-      });
-      
-      if (pexelsRes.data.photos.length > 0) {
-        setThumbnails(pexelsRes.data.photos.map((p: any) => p.src.large2x));
-        setSearchPage(nextPage);
-      }
-    } catch (err) {
-      console.error("Failed to refresh thumbs", err);
-    } finally {
-      setRefreshingThumbs(false);
-    }
+  const addTextBox = () => {
+    if (!result) return;
+    const newBox: TextBox = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: 'New Text',
+      x: 0,
+      y: 50,
+      fontSize: globalFontSize,
+      fontFamily: globalFontFamily
+    };
+    setResult({ ...result, boxes: [...result.boxes, newBox] });
+  };
+
+  const removeBox = (id: string) => {
+    if (!result || result.boxes.length <= 1) return;
+    setResult({ ...result, boxes: result.boxes.filter(b => b.id !== id) });
   };
 
   const generateAd = async (promptOverride?: string) => {
@@ -163,11 +181,9 @@ function App() {
         }
       }
 
-      // Update search state
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
 
-      // 2. Search Pexels (Fetch 4: 1 for main, 3 for thumbnails)
       const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=4&page=1`, {
         headers: { Authorization: PEXELS_API_KEY }
       });
@@ -175,9 +191,15 @@ function App() {
       if (pexelsRes.data.photos.length > 0) {
         setResult({
           image: pexelsRes.data.photos[0].src.large2x,
-          copy: adCopy
+          boxes: [{
+            id: 'main',
+            text: adCopy,
+            x: 0,
+            y: 0,
+            fontSize: globalFontSize,
+            fontFamily: globalFontFamily
+          }]
         });
-        // Set thumbnails (items 1-3)
         if (pexelsRes.data.photos.length > 1) {
           setThumbnails(pexelsRes.data.photos.slice(1).map((p: any) => p.src.large2x));
         }
@@ -310,8 +332,11 @@ function App() {
                 {['sm', 'md', 'lg'].map(sz => (
                   <button 
                     key={sz} 
-                    className={fontSize === sz ? 'active' : ''} 
-                    onClick={() => setFontSize(sz)}
+                    className={globalFontSize === sz ? 'active' : ''} 
+                    onClick={() => {
+                      setGlobalFontSize(sz as any);
+                      setResult({ ...result, boxes: result.boxes.map(b => ({ ...b, fontSize: sz as any })) });
+                    }}
                   >
                     {sz.toUpperCase()}
                   </button>
@@ -321,29 +346,50 @@ function App() {
             <div className="control-group">
               <span className="control-label">Font</span>
               <div className="pill-group">
-                <button className={fontFamily === 'sans' ? 'active' : ''} onClick={() => setFontFamily('sans')}>Sans</button>
-                <button className={fontFamily === 'serif' ? 'active' : ''} onClick={() => setFontFamily('serif')}>Serif</button>
-                <button className={fontFamily === 'display' ? 'active' : ''} onClick={() => setFontFamily('display')}>Bold</button>
+                {['sans', 'serif', 'display'].map(f => (
+                  <button 
+                    key={f}
+                    className={globalFontFamily === f ? 'active' : ''} 
+                    onClick={() => {
+                      setGlobalFontFamily(f as any);
+                      setResult({ ...result, boxes: result.boxes.map(b => ({ ...b, fontFamily: f as any })) });
+                    }}
+                  >
+                    {f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
+            <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
           </div>
 
           <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
             <img src={result.image} alt="Ad background" />
             <div className="overlay">
-              <h2 
-                className={`font-${fontFamily} size-${fontSize}`}
-                style={{ 
-                  transform: `translate(${textPos.x}px, ${textPos.y}px)`,
-                  cursor: isDragging ? 'grabbing' : 'grab',
-                  userSelect: 'none',
-                  touchAction: 'none'
-                }}
-                onMouseDown={(e) => handleDragStart(e.clientX, e.clientY)}
-                onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
-              >
-                {result.copy}
-              </h2>
+              {result.boxes.map((box) => (
+                <div 
+                  key={box.id}
+                  className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`}
+                  style={{ 
+                    transform: `translate(${box.x}px, ${box.y}px)`,
+                  }}
+                >
+                  <div 
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="editable-text"
+                    style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
+                    onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
+                    onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
+                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
+                  >
+                    {box.text}
+                  </div>
+                  {result.boxes.length > 1 && (
+                    <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
           <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>
