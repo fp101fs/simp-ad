@@ -11,6 +11,7 @@ interface TextBox {
   text: string;
   x: number;
   y: number;
+  width: number;
   fontSize: 'sm' | 'md' | 'lg';
   fontFamily: 'sans' | 'serif' | 'display';
 }
@@ -38,7 +39,9 @@ function App() {
   const [refreshingThumbs, setRefreshingThumbs] = useState(false);
 
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
+  const [activeResizeId, setActiveResizeId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, width: 0 });
 
   const [error, setError] = useState('');
 
@@ -60,36 +63,59 @@ function App() {
     setDragStart({ x: clientX - box.x, y: clientY - box.y });
   };
 
-  const handleDragMove = (clientX: number, clientY: number) => {
-    if (!activeBoxId || !result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => 
-        b.id === activeBoxId 
-          ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y }
-          : b
-      )
-    });
+  const handleResizeStart = (id: string, clientX: number) => {
+    const box = result?.boxes.find(b => b.id === id);
+    if (!box) return;
+    setActiveResizeId(id);
+    setResizeStart({ x: clientX, width: box.width });
   };
 
-  const handleDragEnd = () => setActiveBoxId(null);
+  const handleDragMove = (clientX: number, clientY: number) => {
+    if (!result) return;
+    
+    if (activeBoxId) {
+      setResult({
+        ...result,
+        boxes: result.boxes.map(b => 
+          b.id === activeBoxId 
+            ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y }
+            : b
+        )
+      });
+    } else if (activeResizeId) {
+      const delta = (clientX - resizeStart.x) * 2; // Since it's centered, width grows both ways
+      setResult({
+        ...result,
+        boxes: result.boxes.map(b => 
+          b.id === activeResizeId 
+            ? { ...b, width: Math.max(100, resizeStart.width + delta) }
+            : b
+        )
+      });
+    }
+  };
+
+  const handleDragEnd = () => {
+    setActiveBoxId(null);
+    setActiveResizeId(null);
+  };
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (activeBoxId) {
+      if (activeBoxId || activeResizeId) {
         e.preventDefault();
         handleDragMove(e.clientX, e.clientY);
       }
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (activeBoxId) {
+      if (activeBoxId || activeResizeId) {
         e.preventDefault();
         handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
       }
     };
     const onUp = () => handleDragEnd();
 
-    if (activeBoxId) {
+    if (activeBoxId || activeResizeId) {
       window.addEventListener('mousemove', onMouseMove, { passive: false });
       window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -101,7 +127,7 @@ function App() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-  }, [activeBoxId, dragStart]);
+  }, [activeBoxId, activeResizeId, dragStart, resizeStart]);
 
   const refreshThumbnails = async () => {
     if (!currentSearchTerm) return;
@@ -138,6 +164,7 @@ function App() {
       text: 'New Text',
       x: 0,
       y: 50,
+      width: 250,
       fontSize: globalFontSize,
       fontFamily: globalFontFamily
     };
@@ -226,6 +253,7 @@ function App() {
             text: adCopy,
             x: 0,
             y: 0,
+            width: 350,
             fontSize: globalFontSize,
             fontFamily: globalFontFamily
           }]
@@ -402,6 +430,7 @@ function App() {
                   className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`}
                   style={{ 
                     transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
+                    width: box.width,
                   }}
                 >
                   <div 
@@ -415,6 +444,11 @@ function App() {
                   >
                     {box.text}
                   </div>
+                  <div 
+                    className="resize-handle"
+                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX); }}
+                  />
                   {result.boxes.length > 1 && (
                     <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
                   )}
