@@ -285,7 +285,9 @@ function App() {
 
   return (
     <div className="container">
-      <h1>simp.ad</h1>
+      <h1 className="logo-text">
+        simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
+      </h1>
       <p className="subtitle">Instant AI Ads</p>
 
       <div className="mode-toggle">
