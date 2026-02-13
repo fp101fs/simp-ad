@@ -93,6 +93,26 @@ function App() {
     };
   }, [activeBoxId, dragStart]);
 
+  const refreshThumbnails = async () => {
+    if (!currentSearchTerm) return;
+    setRefreshingThumbs(true);
+    try {
+      const nextPage = searchPage + 1;
+      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(currentSearchTerm)}&per_page=3&page=${nextPage}`, {
+        headers: { Authorization: PEXELS_API_KEY }
+      });
+      
+      if (pexelsRes.data.photos.length > 0) {
+        setThumbnails(pexelsRes.data.photos.map((p: any) => p.src.large2x));
+        setSearchPage(nextPage);
+      }
+    } catch (err) {
+      console.error("Failed to refresh thumbs", err);
+    } finally {
+      setRefreshingThumbs(false);
+    }
+  };
+
   const updateBoxText = (id: string, text: string) => {
     if (!result) return;
     setResult({
