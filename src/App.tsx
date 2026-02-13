@@ -57,6 +57,12 @@ function App() {
 
   // Drag Logic
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
+    // Sync current editing text before starting drag to prevent data loss
+    if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
+      const activeId = result?.boxes.find(b => b.text === document.activeElement?.textContent)?.id;
+      if (activeId) updateBoxText(activeId, document.activeElement.textContent || '');
+    }
+
     const box = result?.boxes.find(b => b.id === id);
     if (!box) return;
     setActiveBoxId(id);
@@ -64,6 +70,11 @@ function App() {
   };
 
   const handleResizeStart = (id: string, clientX: number) => {
+    // Sync current editing text before starting resize
+    if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
+      updateBoxText(id, document.activeElement.textContent || '');
+    }
+
     const box = result?.boxes.find(b => b.id === id);
     if (!box) return;
     setActiveResizeId(id);
@@ -440,7 +451,7 @@ function App() {
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
                     onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
                     onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
-                    onInput={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
+                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
                   >
                     {box.text}
                   </div>
