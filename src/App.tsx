@@ -210,8 +210,8 @@ function App() {
         }
         
         const aiPrompt = `Analyze this business/idea prompt: "${query}". 
-        Generate a cohesive ad concept by providing:
-        1. "searchTerm": A single effective image search term for Pexels that sets the right mood/context.
+        Generate a cohesive, professional, and family-friendly ad concept by providing:
+        1. "searchTerm": A literal, descriptive image search term (e.g., "scoop of vanilla ice cream on a cone" instead of "funny ice cream"). Focus on high-quality, professional stock photo subjects.
         2. "adCopy": A short, punchy ad headline (max 10 words) that cleverly connects with that image.
         Return a JSON object with these two fields.
         Return ONLY the JSON.`;
@@ -234,7 +234,7 @@ function App() {
         if (aiPolish) {
           const aiPrompt = `Refine this ad copy idea: "${manualCopy}".
           The background image for this ad is based on the search term: "${manualSearch}".
-          Create a single short, punchy ad headline (max 10 words) that cleverly connects the image concept with the copy idea.
+          Create a single short, punchy, professional, and family-friendly ad headline (max 10 words) that cleverly connects the image concept with the copy idea.
           Return a JSON object with:
           1. "adCopy": The refined headline.
           Return ONLY the JSON.`;
