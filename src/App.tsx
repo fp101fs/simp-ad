@@ -124,9 +124,10 @@ function App() {
         }
         
         const aiPrompt = `Analyze this business/idea prompt: "${query}". 
-        Return a JSON object with:
-        1. "searchTerm": A single effective image search term for Pexels.
-        2. "adCopy": A short, punchy ad headline (max 10 words).
+        Generate a cohesive ad concept by providing:
+        1. "searchTerm": A single effective image search term for Pexels that sets the right mood/context.
+        2. "adCopy": A short, punchy ad headline (max 10 words) that cleverly connects with that image.
+        Return a JSON object with these two fields.
         Return ONLY the JSON.`;
 
         const aiResult = await model.generateContent(aiPrompt);
