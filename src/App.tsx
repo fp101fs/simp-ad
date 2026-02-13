@@ -440,7 +440,7 @@ function App() {
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
                     onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
                     onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
-                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
+                    onInput={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
                   >
                     {box.text}
                   </div>
