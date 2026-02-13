@@ -353,6 +353,7 @@ input:focus { border-color: #ff0080; }
   align-items: center;
   justify-content: center;
   min-width: 50px;
+  max-width: 90%;
   min-height: 20px;
   touch-action: none;
   user-select: none;
@@ -368,7 +369,8 @@ input:focus { border-color: #ff0080; }
   color: white;
   text-shadow: 0 4px 15px rgba(0,0,0,0.6);
   line-height: 1.1;
-  white-space: nowrap;
+  word-wrap: break-word;
+  word-break: break-word;
   touch-action: none;
 }
 
