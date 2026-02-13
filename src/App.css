@@ -347,11 +347,15 @@ input:focus { border-color: #ff0080; }
 
 .text-box-wrapper {
   position: absolute;
+  top: 50%;
+  left: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   min-width: 50px;
   min-height: 20px;
+  touch-action: none;
+  user-select: none;
 }
 
 .editable-text {
@@ -364,6 +368,8 @@ input:focus { border-color: #ff0080; }
   color: white;
   text-shadow: 0 4px 15px rgba(0,0,0,0.6);
   line-height: 1.1;
+  white-space: nowrap;
+  touch-action: none;
 }
 
 .editable-text:focus {

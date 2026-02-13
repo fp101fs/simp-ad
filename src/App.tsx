@@ -75,12 +75,22 @@ function App() {
   const handleDragEnd = () => setActiveBoxId(null);
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
-    const onTouchMove = (e: TouchEvent) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+    const onMouseMove = (e: MouseEvent) => {
+      if (activeBoxId) {
+        e.preventDefault();
+        handleDragMove(e.clientX, e.clientY);
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (activeBoxId) {
+        e.preventDefault();
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
     const onUp = () => handleDragEnd();
 
     if (activeBoxId) {
-      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mousemove', onMouseMove, { passive: false });
       window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onTouchMove, { passive: false });
       window.addEventListener('touchend', onUp);
@@ -391,7 +401,7 @@ function App() {
                   key={box.id}
                   className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`}
                   style={{ 
-                    transform: `translate(${box.x}px, ${box.y}px)`,
+                    transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
                   }}
                 >
                   <div 
