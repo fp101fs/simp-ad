@@ -50,7 +50,7 @@ function App() {
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   const [activeResizeId, setActiveResizeId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({ x: 0, width: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0 });
 
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -87,7 +87,7 @@ function App() {
     setDragStart({ x: clientX - box.x, y: clientY - box.y });
   };
 
-  const handleResizeStart = (id: string, clientX: number) => {
+  const handleResizeStart = (id: string, clientX: number, clientY: number) => {
     // Sync current editing text before starting resize
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       updateBoxText(id, (document.activeElement as HTMLElement).innerText || '');
@@ -96,7 +96,7 @@ function App() {
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveResizeId(id);
-    setResizeStart({ x: clientX, width: box.width });
+    setResizeStart({ x: clientX, y: clientY, width: box.width });
   };
 
   const handleDragMove = (clientX: number, clientY: number) => {
