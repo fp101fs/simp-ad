@@ -339,7 +339,7 @@ function App() {
             },
             {
               id: 'watermark',
-              text: '@simp-dot-ad',
+              text: '🔗simp.ad',
               x: -250, 
               y: 250, // Pushed further down
               width: 200,
