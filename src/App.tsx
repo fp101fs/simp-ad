@@ -16,6 +16,14 @@ interface TextBox {
   fontFamily: 'sans' | 'serif' | 'display';
 }
 
+interface ImageBox {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+}
+
 function App() {
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
@@ -30,7 +38,7 @@ function App() {
   const [globalFontFamily, setGlobalFontFamily] = useState<'sans' | 'serif' | 'display'>('sans');
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ image: string; boxes: TextBox[] } | null>(null);
+  const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[] } | null>(null);
   
   // Thumbnail Logic
   const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -63,7 +71,7 @@ function App() {
       if (activeId) updateBoxText(activeId, document.activeElement.textContent || '');
     }
 
-    const box = result?.boxes.find(b => b.id === id);
+    const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveBoxId(id);
     setDragStart({ x: clientX - box.x, y: clientY - box.y });
@@ -75,7 +83,7 @@ function App() {
       updateBoxText(id, document.activeElement.textContent || '');
     }
 
-    const box = result?.boxes.find(b => b.id === id);
+    const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveResizeId(id);
     setResizeStart({ x: clientX, width: box.width });
@@ -88,19 +96,21 @@ function App() {
       setResult({
         ...result,
         boxes: result.boxes.map(b => 
-          b.id === activeBoxId 
-            ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y }
-            : b
+          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
+        ),
+        imageBoxes: result.imageBoxes.map(b => 
+          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
         )
       });
     } else if (activeResizeId) {
-      const delta = (clientX - resizeStart.x) * 2; // Since it's centered, width grows both ways
+      const delta = (clientX - resizeStart.x) * 2;
       setResult({
         ...result,
         boxes: result.boxes.map(b => 
-          b.id === activeResizeId 
-            ? { ...b, width: Math.max(100, resizeStart.width + delta) }
-            : b
+          b.id === activeResizeId ? { ...b, width: Math.max(100, resizeStart.width + delta) } : b
+        ),
+        imageBoxes: result.imageBoxes.map(b => 
+          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + delta) } : b
         )
       });
     }
@@ -138,7 +148,7 @@ function App() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-  }, [activeBoxId, activeResizeId, dragStart, resizeStart]);
+  }, [activeBoxId, activeResizeId, dragStart, resizeStart, result]);
 
   const refreshThumbnails = async () => {
     if (!currentSearchTerm) return;
@@ -182,9 +192,32 @@ function App() {
     setResult({ ...result, boxes: [...result.boxes, newBox] });
   };
 
+  const addImageBox = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!result || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      const newImageBox: ImageBox = {
+        id: Math.random().toString(36).substr(2, 9),
+        src: event.target.result as string,
+        x: 0,
+        y: 0,
+        width: 150
+      };
+      setResult({ ...result, imageBoxes: [...result.imageBoxes, newImageBox] });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const removeBox = (id: string) => {
-    if (!result || result.boxes.length <= 1) return;
-    setResult({ ...result, boxes: result.boxes.filter(b => b.id !== id) });
+    if (!result) return;
+    if (result.boxes.some(b => b.id === id) && result.boxes.length > 1) {
+      setResult({ ...result, boxes: result.boxes.filter(b => b.id !== id) });
+    } else if (result.imageBoxes.some(b => b.id === id)) {
+      setResult({ ...result, imageBoxes: result.imageBoxes.filter(b => b.id !== id) });
+    }
   };
 
   const generateAd = async (promptOverride?: string) => {
@@ -267,7 +300,8 @@ function App() {
             width: 350,
             fontSize: globalFontSize,
             fontFamily: globalFontFamily
-          }]
+          }],
+          imageBoxes: []
         });
         if (pexelsRes.data.photos.length > 1) {
           setThumbnails(pexelsRes.data.photos.slice(1).map((p: any) => p.src.large2x));
@@ -432,6 +466,15 @@ function App() {
               </div>
             </div>
             <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
+            <label className="add-text-btn" style={{ cursor: 'pointer' }}>
+              + Add Image
+              <input 
+                type="file" 
+                hidden 
+                accept="image/*" 
+                onChange={addImageBox}
+              />
+            </label>
           </div>
 
           <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
@@ -465,6 +508,32 @@ function App() {
                   {result.boxes.length > 1 && (
                     <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
                   )}
+                </div>
+              ))}
+
+              {result.imageBoxes.map((box) => (
+                <div 
+                  key={box.id}
+                  className="text-box-wrapper"
+                  style={{ 
+                    transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
+                    width: box.width,
+                  }}
+                >
+                  <img 
+                    src={box.src} 
+                    alt="Overlay" 
+                    className="editable-image"
+                    style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
+                    onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
+                    onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
+                  />
+                  <div 
+                    className="resize-handle"
+                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX); }}
+                  />
+                  <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
                 </div>
               ))}
             </div>

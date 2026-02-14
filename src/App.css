@@ -413,6 +413,13 @@ input:focus { border-color: #ff0080; }
   background: rgba(255,255,255,0.1);
 }
 
+.editable-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  pointer-events: auto;
+}
+
 .delete-box {
   position: absolute;
   top: -10px;
