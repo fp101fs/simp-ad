@@ -116,13 +116,16 @@ function App() {
       const deltaX = (clientX - resizeStart.x) * 2;
       const deltaY = (clientY - resizeStart.y) * 2;
       
+      // For images, use the delta that is moving more to make it feel natural
+      const imageDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+
       setResult({
         ...result,
         boxes: result.boxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(100, resizeStart.width + deltaX) } : b
+          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b
         ),
         imageBoxes: result.imageBoxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + (deltaX + deltaY)) } : b
+          b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b
         )
       });
     }
