@@ -341,13 +341,21 @@ function App() {
               id: 'watermark',
               text: '@simp-dot-ad',
               x: -120, 
-              y: -150,
+              y: 150, // Moved to bottom
               width: 200,
               fontSize: 'sm',
               fontFamily: 'sans'
             }
           ],
-          imageBoxes: [],
+          imageBoxes: [
+            {
+              id: 'logo',
+              src: '/assets/logo.png',
+              x: 140, // Top-right
+              y: -140,
+              width: 80
+            }
+          ],
           postBody: generatedPostBody
         });
         if (pexelsRes.data.photos.length > 1) {
