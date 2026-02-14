@@ -34,10 +34,6 @@ function App() {
   const [instaMode, setInstaMode] = useState(true);
   const [format, setFormat] = useState('square');
   
-  // Per-box styles are now in the TextBox interface
-  const [globalFontSize, setGlobalFontSize] = useState<'sm' | 'md' | 'lg'>('md');
-  const [globalFontFamily, setGlobalFontFamily] = useState<'sans' | 'serif' | 'display'>('sans');
-
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
   
@@ -49,6 +45,7 @@ function App() {
 
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
   const [activeResizeId, setActiveResizeId] = useState<string | null>(null);
+  const [editingBoxId, setEditingBoxId] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0 });
 
@@ -193,6 +190,22 @@ function App() {
     });
   };
 
+  const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b)
+    });
+  };
+
+  const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b)
+    });
+  };
+
   const addTextBox = () => {
     if (!result) return;
     const newBox: TextBox = {
@@ -201,8 +214,8 @@ function App() {
       x: 0,
       y: 50,
       width: 250,
-      fontSize: globalFontSize,
-      fontFamily: globalFontFamily
+      fontSize: 'md',
+      fontFamily: 'sans'
     };
     setResult({ ...result, boxes: [...result.boxes, newBox] });
   };
@@ -339,8 +352,8 @@ function App() {
               x: 0,
               y: 0,
               width: 550, // Wider default
-              fontSize: globalFontSize,
-              fontFamily: globalFontFamily
+              fontSize: 'md',
+              fontFamily: 'sans'
             },
             {
               id: 'watermark',
@@ -513,40 +526,6 @@ function App() {
           </div>
 
           <div className="style-controls">
-            <div className="control-group">
-              <span className="control-label">Size</span>
-              <div className="pill-group">
-                {['sm', 'md', 'lg'].map(sz => (
-                  <button 
-                    key={sz} 
-                    className={globalFontSize === sz ? 'active' : ''} 
-                    onClick={() => {
-                      setGlobalFontSize(sz as any);
-                      setResult({ ...result, boxes: result.boxes.map(b => ({ ...b, fontSize: sz as any })) });
-                    }}
-                  >
-                    {sz.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="control-group">
-              <span className="control-label">Font</span>
-              <div className="pill-group">
-                {['sans', 'serif', 'display'].map(f => (
-                  <button 
-                    key={f}
-                    className={globalFontFamily === f ? 'active' : ''} 
-                    onClick={() => {
-                      setGlobalFontFamily(f as any);
-                      setResult({ ...result, boxes: result.boxes.map(b => ({ ...b, fontFamily: f as any })) });
-                    }}
-                  >
-                    {f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
             <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
             <label className="add-text-btn" style={{ cursor: 'pointer' }}>
               + Add Image
@@ -569,6 +548,7 @@ function App() {
                   style={{ 
                     transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
                     width: box.width,
+                    zIndex: editingBoxId === box.id ? 100 : 1
                   }}
                 >
                   <div 
@@ -578,10 +558,43 @@ function App() {
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
                     onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
                     onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
-                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.innerText || '')}
+                    onFocus={() => setEditingBoxId(box.id)}
+                    onBlur={(e) => {
+                      updateBoxText(box.id, e.currentTarget.innerText || '');
+                      // Use timeout to allow clicking the control buttons before closing
+                      setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200);
+                    }}
                   >
                     {box.text}
                   </div>
+                  
+                  {editingBoxId === box.id && (
+                    <div className="floating-controls" onMouseDown={e => e.stopPropagation()}>
+                      <div className="mini-pill-group">
+                        {['sm', 'md', 'lg'].map(sz => (
+                          <button 
+                            key={sz} 
+                            className={box.fontSize === sz ? 'active' : ''} 
+                            onClick={() => updateBoxFontSize(box.id, sz as any)}
+                          >
+                            {sz.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mini-pill-group">
+                        {['sans', 'serif', 'display'].map(f => (
+                          <button 
+                            key={f}
+                            className={box.fontFamily === f ? 'active' : ''} 
+                            onClick={() => updateBoxFontFamily(box.id, f as any)}
+                          >
+                            {f === 'display' ? 'B' : f.charAt(0).toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div 
                     className="resize-handle"
                     onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
