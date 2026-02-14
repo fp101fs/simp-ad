@@ -375,7 +375,6 @@ input:focus { border-color: #ff0080; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
   text-align: center;
 }
 
