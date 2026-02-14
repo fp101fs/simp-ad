@@ -448,6 +448,24 @@ input:focus { border-color: #ff0080; }
 .overlay h2.size-md, .text-box-wrapper.size-md .editable-text { font-size: clamp(1.8rem, 8vw, 3.5rem); }
 .overlay h2.size-lg, .text-box-wrapper.size-lg .editable-text { font-size: clamp(2.5rem, 12vw, 5rem); }
 
+.post-body-container {
+  margin-top: 2rem;
+  padding: 20px;
+  background: #111;
+  border-radius: 20px;
+  border: 1px solid #222;
+  text-align: left;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.post-body-text {
+  margin: 0;
+  color: #ccc;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
 .download-hint {
   margin-top: 2rem;
   width: 100%;

@@ -38,7 +38,7 @@ function App() {
   const [globalFontFamily, setGlobalFontFamily] = useState<'sans' | 'serif' | 'display'>('sans');
 
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[] } | null>(null);
+  const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
   
   // Thumbnail Logic
   const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -231,6 +231,7 @@ function App() {
     try {
       let searchTerm = '';
       let adCopy = '';
+      let generatedPostBody = '';
 
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -244,9 +245,10 @@ function App() {
         
         const aiPrompt = `Analyze this business/idea prompt: "${query}". 
         Generate a cohesive, professional, and family-friendly ad concept by providing:
-        1. "searchTerm": A literal, descriptive image search term (e.g., "scoop of vanilla ice cream on a cone" instead of "funny ice cream"). Focus on high-quality, professional stock photo subjects.
-        2. "adCopy": A short, punchy ad headline (max 10 words) that cleverly connects with that image.
-        Return a JSON object with these two fields.
+        1. "searchTerm": A literal, descriptive image search term (e.g., "scoop of vanilla ice cream on a cone").
+        2. "adCopy": A short, punchy ad headline (max 10 words).
+        3. "postBody": An engaging social media caption (1-3 sentences) with relevant hashtags.
+        Return a JSON object with these three fields.
         Return ONLY the JSON.`;
 
         const aiResult = await model.generateContent(aiPrompt);
@@ -255,6 +257,7 @@ function App() {
         const parsed = JSON.parse(cleanJson);
         searchTerm = parsed.searchTerm;
         adCopy = parsed.adCopy;
+        generatedPostBody = parsed.postBody;
       } else {
         // MANUAL mode
         if (!manualSearch || !manualCopy) {
@@ -267,9 +270,10 @@ function App() {
         if (aiPolish) {
           const aiPrompt = `Refine this ad copy idea: "${manualCopy}".
           The background image for this ad is based on the search term: "${manualSearch}".
-          Create a single short, punchy, professional, and family-friendly ad headline (max 10 words) that cleverly connects the image concept with the copy idea.
+          Create a professional and family-friendly ad concept.
           Return a JSON object with:
-          1. "adCopy": The refined headline.
+          1. "adCopy": A single short, punchy headline (max 10 words).
+          2. "postBody": An engaging social media caption (1-3 sentences) with hashtags.
           Return ONLY the JSON.`;
 
           const aiResult = await model.generateContent(aiPrompt);
@@ -277,6 +281,7 @@ function App() {
           const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
           const parsed = JSON.parse(cleanJson);
           adCopy = parsed.adCopy;
+          generatedPostBody = parsed.postBody;
         } else {
           adCopy = manualCopy;
         }
@@ -301,7 +306,8 @@ function App() {
             fontSize: globalFontSize,
             fontFamily: globalFontFamily
           }],
-          imageBoxes: []
+          imageBoxes: [],
+          postBody: generatedPostBody
         });
         if (pexelsRes.data.photos.length > 1) {
           setThumbnails(pexelsRes.data.photos.slice(1).map((p: any) => p.src.large2x));
@@ -538,6 +544,13 @@ function App() {
               ))}
             </div>
           </div>
+
+          {result.postBody && (
+            <div className="post-body-container">
+              <p className="post-body-text">{result.postBody}</p>
+            </div>
+          )}
+
           <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>
         </div>
       )}
