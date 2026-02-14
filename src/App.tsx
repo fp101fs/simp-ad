@@ -51,7 +51,16 @@ function App() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [resizeStart, setResizeStart] = useState({ x: 0, width: 0 });
 
+  const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  // Auto-clear toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Handle URL params on mount
   useEffect(() => {
@@ -531,8 +540,8 @@ function App() {
                     alt="Overlay" 
                     className="editable-image"
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
-                    onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
-                    onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
+                    onMouseDown={(e) => { e.preventDefault(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.preventDefault(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
                   />
                   <div 
                     className="resize-handle"
@@ -553,7 +562,7 @@ function App() {
                   className="copy-btn" 
                   onClick={() => {
                     navigator.clipboard.writeText(result.postBody);
-                    alert('Copied to clipboard!');
+                    setToast('Copied to clipboard!');
                   }}
                 >
                   Copy
@@ -564,6 +573,11 @@ function App() {
           )}
 
           <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>
+        </div>
+      )}
+      {toast && (
+        <div className="toast">
+          {toast}
         </div>
       )}
     </div>
