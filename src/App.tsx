@@ -588,7 +588,7 @@ function App() {
                             className={box.fontFamily === f ? 'active' : ''} 
                             onClick={() => updateBoxFontFamily(box.id, f as any)}
                           >
-                            {f === 'display' ? 'B' : f.charAt(0).toUpperCase()}
+                            {f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}
                           </button>
                         ))}
                       </div>
