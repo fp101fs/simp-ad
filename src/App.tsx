@@ -113,14 +113,16 @@ function App() {
         )
       });
     } else if (activeResizeId) {
-      const delta = (clientX - resizeStart.x) * 2;
+      const deltaX = (clientX - resizeStart.x) * 2;
+      const deltaY = (clientY - resizeStart.y) * 2;
+      
       setResult({
         ...result,
         boxes: result.boxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(100, resizeStart.width + delta) } : b
+          b.id === activeResizeId ? { ...b, width: Math.max(100, resizeStart.width + deltaX) } : b
         ),
         imageBoxes: result.imageBoxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + delta) } : b
+          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + (deltaX + deltaY)) } : b
         )
       });
     }
@@ -333,15 +335,15 @@ function App() {
               text: adCopy,
               x: 0,
               y: 0,
-              width: 350,
+              width: 550, // Wider default
               fontSize: globalFontSize,
               fontFamily: globalFontFamily
             },
             {
               id: 'watermark',
               text: 'simp.ad',
-              x: -200, 
-              y: 250, // Pushed further down
+              x: -220, // Smidge left
+              y: 270, // Smidge down
               width: 200,
               fontSize: 'sm',
               fontFamily: 'sans'
@@ -579,8 +581,8 @@ function App() {
                   </div>
                   <div 
                     className="resize-handle"
-                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX); }}
-                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX); }}
+                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
                   />
                   {result.boxes.length > 1 && (
                     <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
@@ -607,8 +609,8 @@ function App() {
                   />
                   <div 
                     className="resize-handle"
-                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX); }}
-                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX); }}
+                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
                   />
                   <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
                 </div>
