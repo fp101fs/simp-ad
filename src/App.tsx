@@ -26,9 +26,10 @@ interface ImageBox {
 
 function App() {
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
+  const [mode, setMode] = useState<'AUTO' | 'MANUAL' | 'BUILDER'>('AUTO');
   const [manualSearch, setManualSearch] = useState('');
   const [manualCopy, setManualCopy] = useState('');
+  const [builderSearch, setBuilderSearch] = useState('');
   const [aiPolish, setAiPolish] = useState(true);
   const [instaMode, setInstaMode] = useState(true);
   const [format, setFormat] = useState('square');
@@ -267,8 +268,7 @@ function App() {
         searchTerm = parsed.searchTerm;
         adCopy = parsed.adCopy;
         generatedPostBody = parsed.postBody;
-      } else {
-        // MANUAL mode
+      } else if (mode === 'MANUAL') {
         if (!manualSearch || !manualCopy) {
           setError('Please fill in both fields');
           setLoading(false);
@@ -294,6 +294,15 @@ function App() {
         } else {
           adCopy = manualCopy;
         }
+      } else {
+        // BUILDER mode
+        if (!builderSearch) {
+          setError('Enter an image search term');
+          setLoading(false);
+          return;
+        }
+        searchTerm = builderSearch;
+        adCopy = 'Click me to edit';
       }
 
       setCurrentSearchTerm(searchTerm);
@@ -352,10 +361,16 @@ function App() {
         >
           MANUAL
         </button>
+        <button 
+          className={mode === 'BUILDER' ? 'active' : ''} 
+          onClick={() => setMode('BUILDER')}
+        >
+          BUILDER
+        </button>
       </div>
       
       <div className="input-group">
-        {mode === 'AUTO' ? (
+        {mode === 'AUTO' && (
           <input 
             type="text" 
             value={prompt} 
@@ -363,7 +378,9 @@ function App() {
             placeholder="What are we selling today?"
             onKeyDown={(e) => e.key === 'Enter' && generateAd()}
           />
-        ) : (
+        )}
+        
+        {mode === 'MANUAL' && (
           <div className="manual-container">
             <div className="manual-fields">
               <input 
@@ -388,6 +405,16 @@ function App() {
               AI Polish Copy
             </label>
           </div>
+        )}
+
+        {mode === 'BUILDER' && (
+          <input 
+            type="text" 
+            value={builderSearch} 
+            onChange={(e) => setBuilderSearch(e.target.value)}
+            placeholder="Image Search (e.g. Skyline)"
+            onKeyDown={(e) => e.key === 'Enter' && generateAd()}
+          />
         )}
         <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>
           {loading ? 'Simping...' : 'Generate'}
