@@ -221,6 +221,18 @@ function App() {
     e.target.value = '';
   };
 
+  const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!result || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      setResult({ ...result, image: event.target.result as string });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const removeBox = (id: string) => {
     if (!result) return;
     if (result.boxes.some(b => b.id === id) && result.boxes.length > 1) {
@@ -315,15 +327,26 @@ function App() {
       if (pexelsRes.data.photos.length > 0) {
         setResult({
           image: pexelsRes.data.photos[0].src.large2x,
-          boxes: [{
-            id: 'main',
-            text: adCopy,
-            x: 0,
-            y: 0,
-            width: 350,
-            fontSize: globalFontSize,
-            fontFamily: globalFontFamily
-          }],
+          boxes: [
+            {
+              id: 'main',
+              text: adCopy,
+              x: 0,
+              y: 0,
+              width: 350,
+              fontSize: globalFontSize,
+              fontFamily: globalFontFamily
+            },
+            {
+              id: 'watermark',
+              text: '@simp-dot-ad',
+              x: -120, 
+              y: -150,
+              width: 200,
+              fontSize: 'sm',
+              fontFamily: 'sans'
+            }
+          ],
           imageBoxes: [],
           postBody: generatedPostBody
         });
@@ -424,6 +447,10 @@ function App() {
       {thumbnails.length > 0 && (
         <div className="thumbnails-container">
           <div className="thumbnails-row">
+            <label className="upload-thumb">
+              <input type="file" hidden accept="image/*" onChange={handleMainImageUpload} />
+              <span>+</span>
+            </label>
             {thumbnails.map((thumb, idx) => (
               <img 
                 key={idx} 
@@ -581,21 +608,28 @@ function App() {
             </div>
           </div>
 
-          {result.postBody && (
+          {(result.postBody || mode === 'BUILDER') && (
             <div className="post-body-container">
               <div className="post-body-header">
                 <span className="control-label">Post Caption</span>
                 <button 
                   className="copy-btn" 
                   onClick={() => {
-                    navigator.clipboard.writeText(result.postBody);
+                    navigator.clipboard.writeText(result.postBody || '');
                     setToast('Copied to clipboard!');
                   }}
                 >
                   Copy
                 </button>
               </div>
-              <p className="post-body-text">{result.postBody}</p>
+              <p 
+                className="post-body-text" 
+                contentEditable 
+                suppressContentEditableWarning
+                onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}
+              >
+                {result.postBody || "Write your caption here..."}
+              </p>
             </div>
           )}
 

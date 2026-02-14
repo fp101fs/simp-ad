@@ -163,6 +163,26 @@ input:focus { border-color: #ff0080; }
   gap: 10px;
 }
 
+.upload-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  border: 2px dashed #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #888;
+  font-size: 1.5rem;
+  transition: all 0.2s;
+}
+
+.upload-thumb:hover {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+
 .thumbnail {
   width: 60px;
   height: 60px;
@@ -179,8 +199,8 @@ input:focus { border-color: #ff0080; }
 }
 
 .refresh-thumbs-btn {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 1px solid #333;
   background: #1a1a1a;
@@ -189,7 +209,7 @@ input:focus { border-color: #ff0080; }
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   padding: 0;
   transition: all 0.2s;
 }
