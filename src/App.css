@@ -458,6 +458,30 @@ input:focus { border-color: #ff0080; }
   animation: fadeIn 0.4s ease-out;
 }
 
+.post-body-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.copy-btn {
+  background: #222;
+  color: #fff;
+  border: 1px solid #333;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
 .post-body-text {
   margin: 0;
   color: #ccc;

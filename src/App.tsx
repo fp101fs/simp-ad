@@ -67,8 +67,8 @@ function App() {
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
     // Sync current editing text before starting drag to prevent data loss
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
-      const activeId = result?.boxes.find(b => b.text === document.activeElement?.textContent)?.id;
-      if (activeId) updateBoxText(activeId, document.activeElement.textContent || '');
+      const activeId = result?.boxes.find(b => b.text === (document.activeElement as HTMLElement).innerText)?.id;
+      if (activeId) updateBoxText(activeId, (document.activeElement as HTMLElement).innerText || '');
     }
 
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
@@ -80,7 +80,7 @@ function App() {
   const handleResizeStart = (id: string, clientX: number) => {
     // Sync current editing text before starting resize
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
-      updateBoxText(id, document.activeElement.textContent || '');
+      updateBoxText(id, (document.activeElement as HTMLElement).innerText || '');
     }
 
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
@@ -502,7 +502,7 @@ function App() {
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
                     onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
                     onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
-                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.textContent || '')}
+                    onBlur={(e) => updateBoxText(box.id, e.currentTarget.innerText || '')}
                   >
                     {box.text}
                   </div>
@@ -547,6 +547,18 @@ function App() {
 
           {result.postBody && (
             <div className="post-body-container">
+              <div className="post-body-header">
+                <span className="control-label">Post Caption</span>
+                <button 
+                  className="copy-btn" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.postBody);
+                    alert('Copied to clipboard!');
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
               <p className="post-body-text">{result.postBody}</p>
             </div>
           )}
