@@ -340,8 +340,8 @@ function App() {
             {
               id: 'watermark',
               text: '@simp-dot-ad',
-              x: -220, 
-              y: 120, // Bottom-left
+              x: -250, 
+              y: 250, // Pushed further down
               width: 200,
               fontSize: 'sm',
               fontFamily: 'sans'
@@ -351,8 +351,8 @@ function App() {
             {
               id: 'logo',
               src: '/assets/logo.png',
-              x: 240, // Top-right
-              y: -120,
+              x: 250, 
+              y: -250, // Pushed further up
               width: 80
             }
           ],
