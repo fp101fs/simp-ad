@@ -386,69 +386,97 @@ function App() {
                 )}
               </div>
 
-                            <div className="bg-selector-wrapper" ref={bgRef}>
+                                          <div className="bg-selector-wrapper" ref={bgRef}>
 
-                              <button 
+                                            <button 
 
-                                className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
+                                              className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
 
-                                onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
+                                              onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
 
-                              >
+                                            >
 
-                                ✏️ BG {isBgSelectorOpen ? '▲' : '▼'}
+                                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
 
-                              </button>
+                                              <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
 
-                              
+                                            </button>
 
-                              {isBgSelectorOpen && (
+                                            
 
-                                <div className="platform-icons popup bg-popup">
+                                            {isBgSelectorOpen && (
 
-                                  <div className="popup-search-bar">
+                                              <div className="platform-icons popup bg-popup">
 
-                                    <input 
+                                                <div className="popup-search-bar">
 
-                                      type="text" 
+                                                  <input 
 
-                                      value={bgSearchQuery} 
+                                                    type="text" 
 
-                                      onChange={(e) => setBgSearchQuery(e.target.value)}
+                                                    value={bgSearchQuery} 
 
-                                      placeholder="Search background..."
+                                                    onChange={(e) => setBgSearchQuery(e.target.value)}
 
-                                      onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
+                                                    placeholder="Search background..."
 
-                                    />
+                                                    onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
 
-                                    <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
+                                                  />
 
-                                  </div>
+                                                  <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
 
-                                  <div className="thumbnails-row">
+                                                </div>
 
-                                    <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+                                                <div className="thumbnails-row">
 
-                                    {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                                                  <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
 
-                                    <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
+                                                  {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
 
-                                  </div>
+                                                  <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
 
-                                </div>
+                                                </div>
 
-                              )}
+                                              </div>
 
-                            </div>
+                                            )}
 
-              
+                                          </div>
 
-                            <button className="add-text-btn" onClick={addTextBox}>+ T</button>
+                            
 
-                            <label className="add-text-btn" style={{ cursor: 'pointer' }}>+ 🖼️<input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
+                                          <button className="add-text-btn" onClick={addTextBox}>
 
-                          </div>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+
+                                            <span>Text</span>
+
+                                          </button>
+
+                                          <label className="add-text-btn" style={{ cursor: 'pointer' }}>
+
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+
+                                            <span>Img</span>
+
+                                            <input 
+
+                                              type="file" 
+
+                                              hidden 
+
+                                              accept="image/*" 
+
+                                              onChange={addImageBox} 
+
+                                            />
+
+                                          </label>
+
+                                        </div>
+
+                            
 
               
 
