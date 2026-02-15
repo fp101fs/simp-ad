@@ -6,6 +6,7 @@ import './App.css';
 
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 const PLATFORMS = {
   IG: { label: 'Instagram', ratios: ['square', 'portrait', 'story', 'landscape'] },
@@ -42,6 +43,39 @@ interface ImageBox {
   y: number;
   width: number;
 }
+
+// Helper to fetch images from Unsplash with fallback to Pexels
+const fetchImages = async (query: string, page: number, perPage: number): Promise<string[]> => {
+  let images: string[] = [];
+
+  // Try Unsplash first
+  if (UNSPLASH_ACCESS_KEY) {
+    try {
+      const unsplashRes = await axios.get(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}&client_id=${UNSPLASH_ACCESS_KEY}`);
+      if (unsplashRes.data.results && unsplashRes.data.results.length > 0) {
+        images = unsplashRes.data.results.map((img: any) => img.urls.regular);
+      }
+    } catch (err) {
+      console.warn('Unsplash fetch failed, falling back to Pexels', err);
+    }
+  }
+
+  // Fallback to Pexels if Unsplash failed or returned no results
+  if (images.length === 0) {
+    try {
+      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`, {
+        headers: { Authorization: PEXELS_API_KEY }
+      });
+      if (pexelsRes.data.photos && pexelsRes.data.photos.length > 0) {
+        images = pexelsRes.data.photos.map((p: any) => p.src.large2x);
+      }
+    } catch (err) {
+      console.error('Pexels fetch failed', err);
+    }
+  }
+
+  return images;
+};
 
 function App() {
   const [prompt, setPrompt] = useState('');
