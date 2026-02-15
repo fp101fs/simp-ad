@@ -71,7 +71,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Fallback to direct Gemini if OpenRouter key is missing
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       // Map OpenRouter ID to Google ID if possible, or default
-      const googleModelId = modelId.includes('2.0-flash') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
+      const googleModelId = modelId.includes('gemini-3-flash') ? 'gemini-2.0-flash' : 
+                           modelId.includes('2.0-flash') ? 'gemini-2.0-flash' : 'gemini-1.5-flash';
       const model = genAI.getGenerativeModel({ model: googleModelId });
 
       const aiPrompt = `Analyze this business/idea prompt: "${prompt}". 
