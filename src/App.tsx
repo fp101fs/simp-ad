@@ -88,6 +88,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
+  const [bgSearchQuery, setBgSearchQuery] = useState('');
   const adContainerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(false);
@@ -228,6 +229,23 @@ function App() {
       }
     } catch (err) {
       console.error("Failed to refresh thumbs", err);
+    } finally {
+      setRefreshingThumbs(false);
+    }
+  };
+
+  const handlePopupSearch = async () => {
+    if (!bgSearchQuery) return;
+    setRefreshingThumbs(true);
+    try {
+      const images = await fetchImages(bgSearchQuery, 1, 3);
+      if (images.length > 0) {
+        setThumbnails(images);
+        setCurrentSearchTerm(bgSearchQuery);
+        setSearchPage(1);
+      }
+    } catch (err) {
+      console.error("Popup search failed", err);
     } finally {
       setRefreshingThumbs(false);
     }
@@ -574,6 +592,16 @@ function App() {
                 
                 {isBgSelectorOpen && (
                   <div className="platform-icons popup bg-popup">
+                    <div className="popup-search-bar">
+                      <input 
+                        type="text" 
+                        value={bgSearchQuery} 
+                        onChange={(e) => setBgSearchQuery(e.target.value)}
+                        placeholder="Search for background..."
+                        onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
+                      />
+                      <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
+                    </div>
                     <div className="thumbnails-row">
                       <label className="upload-thumb">
                         <input type="file" hidden accept="image/*" onChange={handleMainImageUpload} />
