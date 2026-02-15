@@ -342,7 +342,10 @@ function App() {
                   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
                   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
                 ].map(m => (
-                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>{m.name}</button>
+                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
+                    <span className="model-name">{m.name}</span>
+                    <span className="model-id">{m.id}</span>
+                  </button>
                 ))}
               </div>
             </div>
