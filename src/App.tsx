@@ -86,6 +86,7 @@ function App() {
   const [format, setFormat] = useState('square');
   const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const adContainerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(false);
@@ -475,13 +476,36 @@ function App() {
         {result && (
           <div className="ad-preview">
             <div className="platform-controls">
-              <div className="platform-icons">
-                {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                  <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>
-                    {PLATFORM_ICONS[p]}
-                  </button>
-                ))}
+              <div className="platform-dropdown">
+                <button 
+                  className="platform-trigger"
+                  onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}
+                >
+                  <div className="platform-btn active">
+                    {PLATFORM_ICONS[activePlatform]}
+                  </div>
+                  <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
+                </button>
+
+                {isPlatformSelectorOpen && (
+                  <div className="platform-icons popup">
+                    {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                      <button 
+                        key={p} 
+                        className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
+                        onClick={() => { 
+                          setActivePlatform(p); 
+                          setFormat(PLATFORMS[p].ratios[0]); 
+                          setIsPlatformSelectorOpen(false);
+                        }}
+                      >
+                        {PLATFORM_ICONS[p]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div className="format-pills">
                 {PLATFORMS[activePlatform].ratios.map(f => (
                   <button key={f} className={format === f ? 'active' : ''} onClick={() => setFormat(f)}>{f.toUpperCase()}</button>
