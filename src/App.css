@@ -484,6 +484,7 @@ input:focus { border-color: #ff0080; }
   word-wrap: break-word;
   word-break: break-word;
   touch-action: none;
+  white-space: pre-wrap;
 }
 
 .editable-text:focus {
