@@ -241,26 +241,30 @@ input:focus { border-color: #ff0080; }
 
 .platform-icons {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   background: #111;
-  padding: 6px;
-  border-radius: 30px;
+  padding: 10px;
+  border-radius: 50px;
   border: 1px solid #222;
 }
 
 .platform-btn {
-  width: 40px;
-  height: 40px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: none;
   background: transparent;
-  font-size: 1.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  filter: grayscale(1);
+  filter: grayscale(0.8);
+}
+
+.platform-btn svg {
+  width: 45px;
+  height: 45px;
 }
 
 .platform-btn:hover {
@@ -271,7 +275,7 @@ input:focus { border-color: #ff0080; }
 .platform-btn.active {
   background: #333;
   filter: grayscale(0);
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .hashtag {
