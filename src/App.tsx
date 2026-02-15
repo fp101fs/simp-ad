@@ -307,9 +307,9 @@ function App() {
           image: images[0],
           boxes: [
             { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
-            { id: 'watermark', text: 'simp.ad', x: -220, y: 270, width: 200, fontSize: 'sm', fontFamily: 'sans' }
+            { id: 'watermark', text: 'simp.ad', x: -130, y: 130, width: 200, fontSize: 'sm', fontFamily: 'sans' }
           ],
-          imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: 250, y: -250, width: 80 }],
+          imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: 130, y: -130, width: 80 }],
           postBody: generatedPostBody
         });
         if (images.length > 1) setThumbnails(images.slice(1));
