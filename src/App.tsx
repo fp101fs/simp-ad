@@ -608,8 +608,8 @@ function App() {
                     suppressContentEditableWarning
                     className="editable-text"
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
-                    onMouseDown={(e) => handleDragStart(box.id, e.clientX, e.clientY)}
-                    onTouchStart={(e) => handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY)}
+                    onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
                     onFocus={() => setEditingBoxId(box.id)}
                     onBlur={(e) => {
                       updateBoxText(box.id, e.currentTarget.innerText || '');
@@ -664,6 +664,7 @@ function App() {
                   style={{ 
                     transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
                     width: box.width,
+                    zIndex: activeBoxId === box.id ? 100 : 1
                   }}
                 >
                   <img 
@@ -671,8 +672,8 @@ function App() {
                     alt="Overlay" 
                     className="editable-image"
                     style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
-                    onMouseDown={(e) => { e.preventDefault(); handleDragStart(box.id, e.clientX, e.clientY); }}
-                    onTouchStart={(e) => { e.preventDefault(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
                   />
                   <div 
                     className="resize-handle"
