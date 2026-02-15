@@ -260,6 +260,25 @@ function App() {
     }
   };
 
+  const handleDownloadPNG = async () => {
+    if (!adContainerRef.current) return;
+    try {
+      const canvas = await html2canvas(adContainerRef.current, {
+        useCORS: true,
+        scale: 2, // High res
+        backgroundColor: null
+      });
+      const link = document.createElement('a');
+      link.download = 'simp-ad.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      setToast('Ad saved to downloads!');
+    } catch (err) {
+      console.error(err);
+      setToast('Failed to save image.');
+    }
+  };
+
   const generateAd = async (promptOverride?: string) => {
     const query = promptOverride || prompt;
     
@@ -502,27 +521,39 @@ function App() {
 
       {result && (
         <div className="ad-preview">
-          <div className="insta-controls">
-             <button 
-               className={`insta-toggle ${instaMode ? 'active' : ''}`}
-               onClick={() => setInstaMode(!instaMode)}
-             >
-               📸 Insta Mode {instaMode ? 'ON' : 'OFF'}
-             </button>
+          <div className="platform-controls">
+             <div className="platform-icons">
+               {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                 <button 
+                   key={p}
+                   className={`platform-btn ${activePlatform === p ? 'active' : ''}`}
+                   onClick={() => {
+                     setActivePlatform(p);
+                     setFormat(PLATFORMS[p].ratios[0]);
+                   }}
+                   title={PLATFORMS[p].label}
+                 >
+                   {p === 'IG' && '📸'}
+                   {p === 'FB' && 'xf'}
+                   {p === 'PIN' && '📌'}
+                   {p === 'TK' && '🎵'}
+                   {p === 'YT' && '▶️'}
+                   {p === 'X' && '𝕏'}
+                 </button>
+               ))}
+             </div>
              
-             {instaMode && (
-               <div className="format-pills">
-                 {['square', 'portrait', 'story', 'landscape'].map(f => (
-                   <button 
-                     key={f}
-                     className={format === f ? 'active' : ''}
-                     onClick={() => setFormat(f)}
-                   >
-                     {f.charAt(0).toUpperCase() + f.slice(1)}
-                   </button>
-                 ))}
-               </div>
-             )}
+             <div className="format-pills">
+               {PLATFORMS[activePlatform].ratios.map(f => (
+                 <button 
+                   key={f}
+                   className={format === f ? 'active' : ''}
+                   onClick={() => setFormat(f)}
+                 >
+                   {f.charAt(0).toUpperCase() + f.slice(1)}
+                 </button>
+               ))}
+             </div>
           </div>
 
           <div className="style-controls">
@@ -538,7 +569,10 @@ function App() {
             </label>
           </div>
 
-          <div className={`ad-container ratio-${instaMode ? format : 'landscape'}`}>
+          <div 
+            ref={adContainerRef}
+            className={`ad-container ratio-${format}`}
+          >
             <img src={result.image} alt="Ad background" />
             <div className="overlay">
               {result.boxes.map((box) => (
@@ -654,12 +688,14 @@ function App() {
                 suppressContentEditableWarning
                 onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}
               >
-                {result.postBody || "Write your caption here..."}
+                {(result.postBody || "Write your caption here...").split(' ').map((word, i) => 
+                  word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' '
+                )}
               </p>
             </div>
           )}
 
-          <button className="download-hint" onClick={() => window.print()}>Save Ad (Print/PDF)</button>
+          <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
         </div>
       )}
       {toast && (

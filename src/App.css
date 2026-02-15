@@ -231,6 +231,59 @@ input:focus { border-color: #ff0080; }
   padding-bottom: 4rem;
 }
 
+.platform-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.platform-icons {
+  display: flex;
+  gap: 8px;
+  background: #111;
+  padding: 6px;
+  border-radius: 30px;
+  border: 1px solid #222;
+}
+
+.platform-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  filter: grayscale(1);
+}
+
+.platform-btn:hover {
+  background: rgba(255,255,255,0.1);
+  filter: grayscale(0);
+}
+
+.platform-btn.active {
+  background: #333;
+  filter: grayscale(0);
+  transform: scale(1.1);
+}
+
+.hashtag {
+  color: #1d9bf0;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.hashtag:hover {
+  text-decoration: underline;
+}
+
 .insta-controls { margin-bottom: 1.5rem; }
 
 .insta-toggle {
