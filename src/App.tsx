@@ -90,9 +90,26 @@ function App() {
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
   const [bgSearchQuery, setBgSearchQuery] = useState('');
   const adContainerRef = useRef<HTMLDivElement>(null);
-  
+  const platformRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (platformRef.current && !platformRef.current.contains(event.target as Node)) {
+        setIsPlatformSelectorOpen(false);
+      }
+      if (bgRef.current && !bgRef.current.contains(event.target as Node)) {
+        setIsBgSelectorOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   // Thumbnail Logic
   const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -482,113 +499,119 @@ function App() {
 
         {error && <p className="error">{error}</p>}
 
-              {result && (
+                      {result && (
 
-                <div className="ad-preview">
+                        <div className="ad-preview">
 
-                  <div className="style-controls">
+                          <div className="style-controls">
 
-                    <div className="platform-dropdown">
-
-                      <button 
-
-                        className="platform-trigger"
-
-                        onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}
-
-                      >
-
-                        <div className="platform-btn active small-btn">
-
-                          {PLATFORM_ICONS[activePlatform]}
-
-                        </div>
-
-                        <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
-
-                      </button>
-
-        
-
-                      {isPlatformSelectorOpen && (
-
-                        <div className="platform-icons popup">
-
-                          <div className="platform-row">
-
-                            {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                            <div className="platform-dropdown" ref={platformRef}>
 
                               <button 
 
-                                key={p} 
+                                className="platform-trigger"
 
-                                className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
-
-                                onClick={() => { 
-
-                                  setActivePlatform(p); 
-
-                                  setFormat(PLATFORMS[p].ratios[0]); 
-
-                                }}
+                                onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}
 
                               >
 
-                                {PLATFORM_ICONS[p]}
+                                <div className="platform-btn active small-btn">
+
+                                  {PLATFORM_ICONS[activePlatform]}
+
+                                </div>
+
+                                <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
 
                               </button>
 
-                            ))}
+              
 
-                          </div>
+                              {isPlatformSelectorOpen && (
 
-                          
+                                <div className="platform-icons popup">
 
-                          <div className="format-pills dropdown-pills">
+                                  <div className="platform-row">
 
-                            {PLATFORMS[activePlatform].ratios.map(f => (
+                                    {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+
+                                      <button 
+
+                                        key={p} 
+
+                                        className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
+
+                                        onClick={() => { 
+
+                                          setActivePlatform(p); 
+
+                                          setFormat(PLATFORMS[p].ratios[0]); 
+
+                                        }}
+
+                                      >
+
+                                        {PLATFORM_ICONS[p]}
+
+                                      </button>
+
+                                    ))}
+
+                                  </div>
+
+                                  
+
+                                  <div className="format-pills dropdown-pills">
+
+                                    {PLATFORMS[activePlatform].ratios.map(f => (
+
+                                      <button 
+
+                                        key={f} 
+
+                                        className={format === f ? 'active' : ''} 
+
+                                        onClick={() => {
+
+                                          setFormat(f);
+
+                                          setIsPlatformSelectorOpen(false);
+
+                                        }}
+
+                                      >
+
+                                        {f.toUpperCase()}
+
+                                      </button>
+
+                                    ))}
+
+                                  </div>
+
+                                </div>
+
+                              )}
+
+                            </div>
+
+              
+
+                            <div className="bg-selector-wrapper" ref={bgRef}>
 
                               <button 
 
-                                key={f} 
+                                className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
 
-                                className={format === f ? 'active' : ''} 
-
-                                onClick={() => {
-
-                                  setFormat(f);
-
-                                  setIsPlatformSelectorOpen(false);
-
-                                }}
+                                onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
 
                               >
 
-                                {f.toUpperCase()}
+                                Edit BG {isBgSelectorOpen ? '▲' : '▼'}
 
                               </button>
 
-                            ))}
-
-                          </div>
-
-                        </div>
-
-                      )}
-
-                    </div>
-
-        
-
-                    <div className="bg-selector-wrapper">
-
-        
-                <button 
-                  className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
-                  onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
-                >
-                  Edit BG {isBgSelectorOpen ? '▲' : '▼'}
-                </button>
+              
                 
                 {isBgSelectorOpen && (
                   <div className="platform-icons popup bg-popup">
