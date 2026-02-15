@@ -26,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing or invalid "prompt" query parameter' });
   }
 
-  const modelId = (requestedModel as string) || "google/gemini-2.5-flash";
+  const modelId = (requestedModel as string) || "google/gemini-2.5-flash-lite";
 
   try {
     let searchTerm = '';

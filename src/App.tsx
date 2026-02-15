@@ -84,7 +84,7 @@ function App() {
   const [aiPolish, setAiPolish] = useState(true);
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
-  const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash');
+  const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const adContainerRef = useRef<HTMLDivElement>(null);
   
@@ -423,9 +423,9 @@ function App() {
               <span className="control-label">AI Model</span>
               <div className="vertical-pill-group">
                 {[
-                  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Default)' },
+                  { id: 'google/gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite (Default)' },
                   { id: 'google/gemini-3-flash', name: 'Gemini 3 Flash (Stable)' },
-                  { id: 'google/gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' }
+                  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
                 ].map(m => (
                   <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
                     {m.name}
