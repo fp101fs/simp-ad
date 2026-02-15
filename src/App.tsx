@@ -42,11 +42,8 @@ interface ImageBox {
   width: number;
 }
 
-// Helper to fetch images from Unsplash with fallback to Pexels
 const fetchImages = async (query: string, page: number, perPage: number): Promise<string[]> => {
   let images: string[] = [];
-
-  // Try Unsplash first
   if (UNSPLASH_ACCESS_KEY) {
     try {
       const unsplashRes = await axios.get(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}&client_id=${UNSPLASH_ACCESS_KEY}`);
@@ -57,8 +54,6 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       console.warn('Unsplash fetch failed, falling back to Pexels', err);
     }
   }
-
-  // Fallback to Pexels if Unsplash failed or returned no results
   if (images.length === 0) {
     try {
       const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`, {
@@ -71,17 +66,11 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       console.error('Pexels fetch failed', err);
     }
   }
-
   return images;
 };
 
 function App() {
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<'AUTO' | 'MANUAL' | 'BUILDER'>('AUTO');
-  const [manualSearch, setManualSearch] = useState('');
-  const [manualCopy, setManualCopy] = useState('');
-  const [builderSearch, setBuilderSearch] = useState('');
-  const [aiPolish, setAiPolish] = useState(true);
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
   const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
@@ -96,22 +85,15 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
 
-  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (platformRef.current && !platformRef.current.contains(event.target as Node)) {
-        setIsPlatformSelectorOpen(false);
-      }
-      if (bgRef.current && !bgRef.current.contains(event.target as Node)) {
-        setIsBgSelectorOpen(false);
-      }
+      if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
+      if (bgRef.current && !bgRef.current.contains(event.target as Node)) setIsBgSelectorOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Thumbnail Logic
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -126,7 +108,6 @@ function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  // Auto-clear toast
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 2000);
@@ -134,7 +115,6 @@ function App() {
     }
   }, [toast]);
 
-  // Handle URL params on mount
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
@@ -144,14 +124,11 @@ function App() {
     }
   }, []);
 
-  // Drag Logic
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
-    // Sync current editing text before starting drag
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       const activeId = result?.boxes.find(b => b.text === (document.activeElement as HTMLElement).innerText)?.id;
       if (activeId) updateBoxText(activeId, (document.activeElement as HTMLElement).innerText || '');
     }
-
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveBoxId(id);
@@ -159,11 +136,9 @@ function App() {
   };
 
   const handleResizeStart = (id: string, clientX: number, clientY: number) => {
-    // Sync current editing text before starting resize
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       updateBoxText(id, (document.activeElement as HTMLElement).innerText || '');
     }
-
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveResizeId(id);
@@ -172,30 +147,20 @@ function App() {
 
   const handleDragMove = (clientX: number, clientY: number) => {
     if (!result) return;
-    
     if (activeBoxId) {
       setResult({
         ...result,
-        boxes: result.boxes.map(b => 
-          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
-        ),
-        imageBoxes: result.imageBoxes.map(b => 
-          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
-        )
+        boxes: result.boxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b),
+        imageBoxes: result.imageBoxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b)
       });
     } else if (activeResizeId) {
       const deltaX = (clientX - resizeStart.x) * 2;
       const deltaY = (clientY - resizeStart.y) * 2;
       const imageDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-
       setResult({
         ...result,
-        boxes: result.boxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b
-        ),
-        imageBoxes: result.imageBoxes.map(b => 
-          b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b
-        )
+        boxes: result.boxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b),
+        imageBoxes: result.imageBoxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b)
       });
     }
   };
@@ -206,20 +171,9 @@ function App() {
   };
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (activeBoxId || activeResizeId) {
-        e.preventDefault();
-        handleDragMove(e.clientX, e.clientY);
-      }
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (activeBoxId || activeResizeId) {
-        e.preventDefault();
-        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    };
+    const onMouseMove = (e: MouseEvent) => { if (activeBoxId || activeResizeId) { e.preventDefault(); handleDragMove(e.clientX, e.clientY); } };
+    const onTouchMove = (e: TouchEvent) => { if (activeBoxId || activeResizeId) { e.preventDefault(); handleDragMove(e.touches[0].clientX, e.touches[0].clientY); } };
     const onUp = () => handleDragEnd();
-
     if (activeBoxId || activeResizeId) {
       window.addEventListener('mousemove', onMouseMove, { passive: false });
       window.addEventListener('mouseup', onUp);
@@ -270,39 +224,22 @@ function App() {
 
   const updateBoxText = (id: string, text: string) => {
     if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b)
-    });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b) });
   };
 
   const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
     if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b)
-    });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b) });
   };
 
   const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
     if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b)
-    });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
   };
 
   const addTextBox = () => {
     if (!result) return;
-    const newBox: TextBox = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: 'New Text',
-      x: 0,
-      y: 50,
-      width: 250,
-      fontSize: 'md',
-      fontFamily: 'sans'
-    };
+    const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans' };
     setResult({ ...result, boxes: [...result.boxes, newBox] });
   };
 
@@ -312,13 +249,7 @@ function App() {
     const reader = new FileReader();
     reader.onload = (event) => {
       if (!event.target?.result) return;
-      const newImageBox: ImageBox = {
-        id: Math.random().toString(36).substr(2, 9),
-        src: event.target.result as string,
-        x: 0,
-        y: 0,
-        width: 150
-      };
+      const newImageBox: ImageBox = { id: Math.random().toString(36).substr(2, 9), src: event.target.result as string, x: 0, y: 0, width: 150 };
       setResult({ ...result, imageBoxes: [...result.imageBoxes, newImageBox] });
     };
     reader.readAsDataURL(file);
@@ -349,72 +280,28 @@ function App() {
   const handleDownloadPNG = async () => {
     if (!adContainerRef.current) return;
     try {
-      const canvas = await html2canvas(adContainerRef.current, {
-        useCORS: true,
-        scale: 2,
-        backgroundColor: null
-      });
+      const canvas = await html2canvas(adContainerRef.current, { useCORS: true, scale: 2, backgroundColor: null });
       const link = document.createElement('a');
       link.download = 'simp-ad.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
       setToast('Ad saved to downloads!');
-    } catch (err) {
-      console.error(err);
-      setToast('Failed to save image.');
-    }
+    } catch (err) { console.error(err); setToast('Failed to save image.'); }
   };
 
   const generateAd = async (promptOverride?: string) => {
     const query = promptOverride || prompt;
+    if (!query) { setError('Please enter a prompt'); return; }
     setLoading(true);
     setError('');
     setResult(null);
     setThumbnails([]);
-
     try {
-      let searchTerm = '';
-      let adCopy = '';
-      let generatedPostBody = '';
-
-      if (mode === 'AUTO') {
-        if (!query) {
-          setError('Please enter a prompt');
-          setLoading(false);
-          return;
-        }
-        const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
-        searchTerm = aiRes.data.searchTerm;
-        adCopy = aiRes.data.adCopy;
-        generatedPostBody = aiRes.data.postBody;
-      } else if (mode === 'MANUAL') {
-        if (!manualSearch || !manualCopy) {
-          setError('Please fill in both fields');
-          setLoading(false);
-          return;
-        }
-        searchTerm = manualSearch;
-        if (aiPolish) {
-          const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(manualCopy)}&model=${llmModel}&manualSearch=${encodeURIComponent(manualSearch)}`);
-          adCopy = aiRes.data.adCopy;
-          generatedPostBody = aiRes.data.postBody;
-        } else {
-          adCopy = manualCopy;
-        }
-      } else {
-        if (!builderSearch) {
-          setError('Enter an image search term');
-          setLoading(false);
-          return;
-        }
-        searchTerm = builderSearch;
-        adCopy = 'Click me to edit';
-      }
-
+      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
+      const { searchTerm, adCopy, postBody: generatedPostBody } = aiRes.data;
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
       const images = await fetchImages(searchTerm, 1, 4);
-
       if (images.length > 0) {
         setResult({
           image: images[0],
@@ -422,33 +309,20 @@ function App() {
             { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
             { id: 'watermark', text: 'simp.ad', x: -220, y: 270, width: 200, fontSize: 'sm', fontFamily: 'sans' }
           ],
-          imageBoxes: [
-            { id: 'logo', src: '/assets/logo.png', x: 250, y: -250, width: 80 }
-          ],
+          imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: 250, y: -250, width: 80 }],
           postBody: generatedPostBody
         });
         if (images.length > 1) setThumbnails(images.slice(1));
-      } else {
-        setError('No relevant images found.');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError('Failed to generate ad. Check console and API keys.');
-    } finally {
-      setLoading(false);
-    }
+      } else { setError('No relevant images found.'); }
+    } catch (err: any) { console.error(err); setError('Failed to generate ad. Check console and API keys.'); } finally { setLoading(false); }
   };
 
   return (
     <div className="app-container">
       <header className="app-header">
         <div className="header-left"></div>
-        <h1 className="logo-text">
-          simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
-        </h1>
-        <div className="header-right">
-          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>⚙️</button>
-        </div>
+        <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
+        <div className="header-right"><button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>⚙️</button></div>
         <p className="subtitle">Instant AI Ads</p>
       </header>
 
@@ -464,9 +338,7 @@ function App() {
                   { id: 'google/gemini-3-flash', name: 'Gemini 3 Flash (Stable)' },
                   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
                 ].map(m => (
-                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
-                    {m.name}
-                  </button>
+                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>{m.name}</button>
                 ))}
               </div>
             </div>
@@ -476,179 +348,49 @@ function App() {
       )}
 
       <div className="container">
-        <div className="mode-toggle">
-          {['AUTO', 'MANUAL', 'BUILDER'].map(m => (
-            <button key={m} className={mode === m ? 'active' : ''} onClick={() => setMode(m as any)}>{m}</button>
-          ))}
-        </div>
-        
         <div className="input-group">
-          {mode === 'AUTO' && <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />}
-          {mode === 'MANUAL' && (
-            <div className="manual-container">
-              <div className="manual-fields">
-                <input type="text" value={manualSearch} onChange={(e) => setManualSearch(e.target.value)} placeholder="Image Search" />
-                <input type="text" value={manualCopy} onChange={(e) => setManualCopy(e.target.value)} placeholder="Ad Copy Hook" />
-              </div>
-              <label className="checkbox-label"><input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)} /> AI Polish Copy</label>
-            </div>
-          )}
-          {mode === 'BUILDER' && <input type="text" value={builderSearch} onChange={(e) => setBuilderSearch(e.target.value)} placeholder="Image Search" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />}
+          <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
           <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>{loading ? 'Simping...' : 'Generate'}</button>
         </div>
 
         {error && <p className="error">{error}</p>}
 
-                      {result && (
+        {result && (
+          <div className="ad-preview">
+            <div className="style-controls">
+              <div className="platform-dropdown" ref={platformRef}>
+                <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
+                  <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
+                  <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
+                </button>
+                {isPlatformSelectorOpen && (
+                  <div className="platform-icons popup">
+                    <div className="platform-row">
+                      {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
+                      ))}
+                    </div>
+                    <div className="format-pills dropdown-pills">
+                      {PLATFORMS[activePlatform].ratios.map(f => (
+                        <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                        <div className="ad-preview">
-
-                          <div className="style-controls">
-
-                            <div className="platform-dropdown" ref={platformRef}>
-
-                              <button 
-
-                                className="platform-trigger"
-
-                                onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}
-
-                              >
-
-                                <div className="platform-btn active small-btn">
-
-                                  {PLATFORM_ICONS[activePlatform]}
-
-                                </div>
-
-                                <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
-
-                              </button>
-
-              
-
-                              {isPlatformSelectorOpen && (
-
-                                <div className="platform-icons popup">
-
-                                  <div className="platform-row">
-
-                                    {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-
-                                      <button 
-
-                                        key={p} 
-
-                                        className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
-
-                                        onClick={() => { 
-
-                                          setActivePlatform(p); 
-
-                                          setFormat(PLATFORMS[p].ratios[0]); 
-
-                                        }}
-
-                                      >
-
-                                        {PLATFORM_ICONS[p]}
-
-                                      </button>
-
-                                    ))}
-
-                                  </div>
-
-                                  
-
-                                  <div className="format-pills dropdown-pills">
-
-                                    {PLATFORMS[activePlatform].ratios.map(f => (
-
-                                      <button 
-
-                                        key={f} 
-
-                                        className={format === f ? 'active' : ''} 
-
-                                        onClick={() => {
-
-                                          setFormat(f);
-
-                                          setIsPlatformSelectorOpen(false);
-
-                                        }}
-
-                                      >
-
-                                        {f.toUpperCase()}
-
-                                      </button>
-
-                                    ))}
-
-                                  </div>
-
-                                </div>
-
-                              )}
-
-                            </div>
-
-              
-
-                            <div className="bg-selector-wrapper" ref={bgRef}>
-
-                              <button 
-
-                                className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
-
-                                onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
-
-                              >
-
-                                Edit BG {isBgSelectorOpen ? '▲' : '▼'}
-
-                              </button>
-
-              
-                
+              <div className="bg-selector-wrapper" ref={bgRef}>
+                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>Edit BG {isBgSelectorOpen ? '▲' : '▼'}</button>
                 {isBgSelectorOpen && (
                   <div className="platform-icons popup bg-popup">
                     <div className="popup-search-bar">
-                      <input 
-                        type="text" 
-                        value={bgSearchQuery} 
-                        onChange={(e) => setBgSearchQuery(e.target.value)}
-                        placeholder="Search for background..."
-                        onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
-                      />
+                      <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search background..." onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()} />
                       <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
                     </div>
                     <div className="thumbnails-row">
-                      <label className="upload-thumb">
-                        <input type="file" hidden accept="image/*" onChange={handleMainImageUpload} />
-                        <span>+</span>
-                      </label>
-                      {thumbnails.map((thumb, idx) => (
-                        <img 
-                          key={idx} 
-                          src={thumb} 
-                          alt="Option" 
-                          className="thumbnail" 
-                          onClick={() => {
-                            setResult(prev => prev ? { ...prev, image: thumb } : null);
-                            setIsBgSelectorOpen(false);
-                          }} 
-                        />
-                      ))}
-                      <button 
-                        className="refresh-thumbs-btn" 
-                        onClick={refreshThumbnails} 
-                        disabled={refreshingThumbs}
-                      >
-                        {refreshingThumbs ? '...' : '↻'}
-                      </button>
+                      <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                      <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
                     </div>
                   </div>
                 )}
@@ -686,11 +428,11 @@ function App() {
               </div>
             </div>
 
-            {(result.postBody || mode === 'BUILDER') && (
+            {result.postBody && (
               <div className="post-body-container">
                 <div className="post-body-header"><span className="control-label">Post Caption</span><button className="copy-btn" onClick={() => { navigator.clipboard.writeText(result.postBody || ''); setToast('Copied to clipboard!'); }}>Copy</button></div>
                 <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}>
-                  {(result.postBody || "Write your caption here...").split(' ').map((word, i) => word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' ')}
+                  {result.postBody.split(' ').map((word, i) => word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' ')}
                 </p>
               </div>
             )}
