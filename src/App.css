@@ -23,11 +23,12 @@ body {
   margin: 0 auto;
   padding: 0 1rem 1rem 1rem;
   text-align: center;
+  overflow-x: hidden;
 }
 
 .app-header {
   padding: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -47,16 +48,19 @@ body {
 .header-right {
   display: flex;
   justify-content: flex-end;
-  padding-right: 1rem;
+  padding-right: 0.5rem;
 }
 
 .settings-btn {
   background: transparent;
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
   opacity: 0.6;
   transition: opacity 0.2s;
+  color: #fff;
+  padding: 5px;
+  display: flex;
+  align-items: center;
 }
 
 .settings-btn:hover {
@@ -66,8 +70,8 @@ body {
 .subtitle {
   grid-column: 1 / span 3;
   color: #888;
-  margin-top: -5px;
-  margin-bottom: 2rem;
+  margin-top: -8px;
+  margin-bottom: 1.2rem;
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -164,92 +168,57 @@ h1 {
   letter-spacing: -2px;
 }
 
-.mode-toggle {
-  display: flex;
-  justify-content: center;
-  gap: 0;
-  margin-bottom: 2rem;
-}
-
-.mode-toggle button {
-  padding: 16px 28px;
-  flex: 1;
-  max-width: 160px;
-  border-radius: 0;
-  background: #1a1a1a;
-  color: #888;
-  border: 1px solid #333;
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-}
-
-.mode-toggle button:first-child { border-radius: 40px 0 0 40px; }
-.mode-toggle button:last-child { border-radius: 0 40px 40px 0; }
-.mode-toggle button.active {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
-}
-
 .input-group {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-bottom: 2.5rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  width: 100%;
 }
 
 input {
-  width: 100%;
+  flex: 1;
   box-sizing: border-box;
-  padding: 20px 28px;
-  border-radius: 20px;
+  padding: 18px 24px;
+  border-radius: 40px;
   border: 1px solid #333;
   background: #111;
   color: white;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   outline: none;
   transition: border-color 0.2s;
+  height: 60px;
 }
 
 input:focus { border-color: #ff0080; }
 
-.manual-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.manual-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.checkbox-label {
+.go-btn {
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  font-size: 1.1rem;
-  color: #aaa;
-  padding: 8px;
+  transition: transform 0.2s, background-color 0.2s;
+  box-shadow: 0 4px 15px rgba(255,255,255,0.2);
 }
 
-.checkbox-label input { width: 24px; height: 24px; }
+.go-btn:hover {
+  transform: scale(1.05);
+  background: #eee;
+}
 
-.primary-btn {
-  width: 100%;
-  padding: 20px;
-  border-radius: 20px;
-  font-size: 1.3rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  background: #fff;
-  color: #000;
-  font-weight: 900;
-  cursor: pointer;
-  border: none;
+.go-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .thumbnails-container {
@@ -798,7 +767,6 @@ input:focus { border-color: #ff0080; }
 
 @media (min-width: 600px) {
   .input-group { flex-direction: row; }
-  .manual-fields { flex-direction: row; }
 }
 
 @keyframes fadeIn {
