@@ -25,10 +25,14 @@ body {
   text-align: center;
 }
 
+.app-header {
+  padding: 1rem 0;
+  margin-bottom: 1rem;
+}
+
 .container {
   max-width: 600px;
   margin: 0 auto;
-  padding-top: 2vh;
 }
 
 .logo-text {
@@ -613,6 +617,6 @@ input:focus { border-color: #ff0080; }
 }
 
 @media print {
-  .input-group, h1, .subtitle, .download-hint, .insta-controls, .mode-toggle { display: none; }
+  .input-group, .app-header, .download-hint, .insta-controls, .mode-toggle, .platform-controls, .style-controls { display: none; }
   .ad-container { border-radius: 0; box-shadow: none; }
 }

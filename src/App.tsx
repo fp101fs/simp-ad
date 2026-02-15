@@ -463,11 +463,15 @@ function App() {
   };
 
   return (
-    <div className="container">
-      <h1 className="logo-text">
-        simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
-      </h1>
-      <p className="subtitle">Instant AI Ads</p>
+    <div className="app-container">
+      <header className="app-header">
+        <h1 className="logo-text">
+          simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
+        </h1>
+        <p className="subtitle">Instant AI Ads</p>
+      </header>
+
+      <div className="container">
 
       <div className="mode-toggle">
         <button 
