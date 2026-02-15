@@ -31,7 +31,6 @@ interface TextBox {
   x: number;
   y: number;
   width: number;
-  height: number;
   fontSize: 'sm' | 'md' | 'lg';
   fontFamily: 'sans' | 'serif' | 'display';
 }
@@ -142,8 +141,7 @@ function App() {
         boxes: result.boxes.map(b => 
           b.id === activeResizeId ? { 
             ...b, 
-            width: Math.max(50, resizeStart.width + deltaX),
-            height: Math.max(20, (b.height || 0) + deltaY) // Basic height resize
+            width: Math.max(50, resizeStart.width + deltaX)
           } : b
         ),
         imageBoxes: result.imageBoxes.map(b => 
@@ -239,7 +237,6 @@ function App() {
       x: 0,
       y: 50,
       width: 250,
-      height: 100, // Default height
       fontSize: 'md',
       fontFamily: 'sans'
     };
@@ -397,7 +394,6 @@ function App() {
               x: 0,
               y: 0,
               width: 550, // Wider default
-              height: 150, // Default height
               fontSize: 'md',
               fontFamily: 'sans'
             },
@@ -407,7 +403,6 @@ function App() {
               x: -220, // Smidge left
               y: 270, // Smidge down
               width: 200,
-              height: 40,
               fontSize: 'sm',
               fontFamily: 'sans'
             }
@@ -605,7 +600,6 @@ function App() {
                   style={{ 
                     transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
                     width: box.width,
-                    height: box.height,
                     zIndex: editingBoxId === box.id ? 100 : 1
                   }}
                 >
