@@ -489,27 +489,37 @@ function App() {
 
                 {isPlatformSelectorOpen && (
                   <div className="platform-icons popup">
-                    {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                      <button 
-                        key={p} 
-                        className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
-                        onClick={() => { 
-                          setActivePlatform(p); 
-                          setFormat(PLATFORMS[p].ratios[0]); 
-                          setIsPlatformSelectorOpen(false);
-                        }}
-                      >
-                        {PLATFORM_ICONS[p]}
-                      </button>
-                    ))}
+                    <div className="platform-row">
+                      {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                        <button 
+                          key={p} 
+                          className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
+                          onClick={() => { 
+                            setActivePlatform(p); 
+                            setFormat(PLATFORMS[p].ratios[0]); 
+                          }}
+                        >
+                          {PLATFORM_ICONS[p]}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <div className="format-pills dropdown-pills">
+                      {PLATFORMS[activePlatform].ratios.map(f => (
+                        <button 
+                          key={f} 
+                          className={format === f ? 'active' : ''} 
+                          onClick={() => {
+                            setFormat(f);
+                            setIsPlatformSelectorOpen(false);
+                          }}
+                        >
+                          {f.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
-              </div>
-
-              <div className="format-pills">
-                {PLATFORMS[activePlatform].ratios.map(f => (
-                  <button key={f} className={format === f ? 'active' : ''} onClick={() => setFormat(f)}>{f.toUpperCase()}</button>
-                ))}
               </div>
             </div>
 
