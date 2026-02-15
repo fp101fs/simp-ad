@@ -409,43 +409,115 @@ function App() {
 
                                             
 
-                                            {isBgSelectorOpen && (
+                                                            {isBgSelectorOpen && (
 
-                                              <div className="platform-icons popup bg-popup">
+                                            
 
-                                                <div className="popup-search-bar">
+                                                              <div className="platform-icons popup bg-popup">
 
-                                                  <input 
+                                            
 
-                                                    type="text" 
+                                                                <div className="popup-search-bar">
 
-                                                    value={bgSearchQuery} 
+                                            
 
-                                                    onChange={(e) => setBgSearchQuery(e.target.value)}
+                                                                  <input 
 
-                                                    placeholder="Search background..."
+                                            
 
-                                                    onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
+                                                                    type="text" 
 
-                                                  />
+                                            
 
-                                                  <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
+                                                                    value={bgSearchQuery} 
 
-                                                </div>
+                                            
 
-                                                <div className="thumbnails-row">
+                                                                    onChange={(e) => setBgSearchQuery(e.target.value)}
 
-                                                  <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+                                            
 
-                                                  {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                                                                    placeholder="Search images.. ex: yoga, dogs"
 
-                                                  <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
+                                            
 
-                                                </div>
+                                                                    onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
 
-                                              </div>
+                                            
 
-                                            )}
+                                                                  />
+
+                                            
+
+                                                                  <button className="popup-search-btn" onClick={handlePopupSearch}>
+
+                                            
+
+                                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+
+                                            
+
+                                                                  </button>
+
+                                            
+
+                                                                </div>
+
+                                            
+
+                                                                <div className="thumbnails-row">
+
+                                            
+
+                                                                  <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+
+                                            
+
+                                                                  {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+
+                                            
+
+                                                                  <button 
+
+                                            
+
+                                                                    className="refresh-thumbs-btn" 
+
+                                            
+
+                                                                    onClick={refreshThumbnails} 
+
+                                            
+
+                                                                    disabled={refreshingThumbs}
+
+                                            
+
+                                                                  >
+
+                                            
+
+                                                                    <svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+
+                                            
+
+                                                                  </button>
+
+                                            
+
+                                                                </div>
+
+                                            
+
+                                                              </div>
+
+                                            
+
+                                                            )}
+
+                                            
+
+                                            
 
                                           </div>
 

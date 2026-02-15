@@ -250,11 +250,12 @@ input:focus {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
 }
 
 .upload-thumb {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   border-radius: 16px;
   border: 2px dashed #444;
   display: flex;
@@ -273,8 +274,8 @@ input:focus {
 }
 
 .thumbnail {
-  width: 70px;
-  height: 70px;
+  width: 60px;
+  height: 60px;
   object-fit: cover;
   border-radius: 16px;
   border: 2px solid transparent;
@@ -288,8 +289,8 @@ input:focus {
 }
 
 .refresh-thumbs-btn {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 1px solid #333;
   background: #1a1a1a;
@@ -298,14 +299,32 @@ input:focus {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 2rem;
-  padding: 0;
   transition: all 0.2s;
+  padding: 0;
+}
+
+.refresh-thumbs-btn svg {
+  width: 24px;
+  height: 24px;
 }
 
 .refresh-thumbs-btn:hover {
   background: #fff;
   color: #000;
+}
+
+.refresh-thumbs-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .ad-preview {
@@ -325,6 +344,45 @@ input:focus {
 
 .bg-selector-wrapper {
   position: relative;
+}
+
+.bg-popup {
+  bottom: 100%;
+  top: auto !important;
+  margin-top: 0 !important;
+  margin-bottom: 15px;
+  width: calc(100vw - 40px);
+  max-width: 360px;
+}
+
+.popup-search-bar {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.popup-search-bar input {
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 0;
+  height: 45px;
+}
+
+.popup-search-btn {
+  background: #333;
+  border: 1px solid #444;
+  color: white;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .platform-dropdown {
@@ -372,13 +430,12 @@ input:focus {
   animation: slideDownPopup 0.2s ease-out;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  border-radius: 32px;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 24px;
   background: #111;
   border: 1px solid #333;
-  width: calc(100vw - 40px);
-  max-width: 400px;
+  width: 240px; /* Force 3 columns approx */
   box-sizing: border-box;
 }
 
@@ -389,7 +446,7 @@ input:focus {
 
 .platform-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -397,8 +454,8 @@ input:focus {
 .dropdown-pills {
   justify-content: center;
   width: 100%;
-  padding: 10px;
-  border-radius: 20px;
+  padding: 8px;
+  border-radius: 16px;
   background: rgba(255,255,255,0.05);
   box-sizing: border-box;
 }
@@ -456,7 +513,7 @@ input:focus {
 
 .format-pills button {
   padding: 10px 18px;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 800;
   background: transparent;
   color: #888;
