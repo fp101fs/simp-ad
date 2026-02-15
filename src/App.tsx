@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import './App.css';
 
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 const PLATFORMS = {
@@ -64,7 +62,7 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
   if (images.length === 0) {
     try {
       const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`, {
-        headers: { Authorization: PEXELS_API_KEY }
+        headers: { Authorization: PEXELS_API_KEY || '' }
       });
       if (pexelsRes.data.photos && pexelsRes.data.photos.length > 0) {
         images = pexelsRes.data.photos.map((p: any) => p.src.large2x);
@@ -86,6 +84,8 @@ function App() {
   const [aiPolish, setAiPolish] = useState(true);
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
+  const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const adContainerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(false);
@@ -166,17 +166,12 @@ function App() {
     } else if (activeResizeId) {
       const deltaX = (clientX - resizeStart.x) * 2;
       const deltaY = (clientY - resizeStart.y) * 2;
-      
-      // For images, use the delta that is moving more to make it feel natural
       const imageDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
 
       setResult({
         ...result,
         boxes: result.boxes.map(b => 
-          b.id === activeResizeId ? { 
-            ...b, 
-            width: Math.max(50, resizeStart.width + deltaX)
-          } : b
+          b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b
         ),
         imageBoxes: result.imageBoxes.map(b => 
           b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b
@@ -225,7 +220,6 @@ function App() {
     try {
       const nextPage = searchPage + 1;
       const images = await fetchImages(currentSearchTerm, nextPage, 3);
-      
       if (images.length > 0) {
         setThumbnails(images);
         setSearchPage(nextPage);
@@ -336,7 +330,6 @@ function App() {
 
   const generateAd = async (promptOverride?: string) => {
     const query = promptOverride || prompt;
-    
     setLoading(true);
     setError('');
     setResult(null);
@@ -347,31 +340,16 @@ function App() {
       let adCopy = '';
       let generatedPostBody = '';
 
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
       if (mode === 'AUTO') {
         if (!query) {
           setError('Please enter a prompt');
           setLoading(false);
           return;
         }
-        
-        const aiPrompt = `Analyze this business/idea prompt: "${query}". 
-        Generate a cohesive, professional, and family-friendly ad concept by providing:
-        1. "searchTerm": A literal, descriptive image search term (e.g., "scoop of vanilla ice cream on a cone").
-        2. "adCopy": A short, punchy ad headline (max 10 words).
-        3. "postBody": An engaging social media caption (1-3 sentences) with relevant hashtags.
-        Return a JSON object with these three fields.
-        Return ONLY the JSON.`;
-
-        const aiResult = await model.generateContent(aiPrompt);
-        const aiResponse = aiResult.response.text();
-        const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(cleanJson);
-        searchTerm = parsed.searchTerm;
-        adCopy = parsed.adCopy;
-        generatedPostBody = parsed.postBody;
+        const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
+        searchTerm = aiRes.data.searchTerm;
+        adCopy = aiRes.data.adCopy;
+        generatedPostBody = aiRes.data.postBody;
       } else if (mode === 'MANUAL') {
         if (!manualSearch || !manualCopy) {
           setError('Please fill in both fields');
@@ -379,27 +357,14 @@ function App() {
           return;
         }
         searchTerm = manualSearch;
-        
         if (aiPolish) {
-          const aiPrompt = `Refine this ad copy idea: "${manualCopy}".
-          The background image for this ad is based on the search term: "${manualSearch}".
-          Create a professional and family-friendly ad concept.
-          Return a JSON object with:
-          1. "adCopy": A single short, punchy headline (max 10 words).
-          2. "postBody": An engaging social media caption (1-3 sentences) with hashtags.
-          Return ONLY the JSON.`;
-
-          const aiResult = await model.generateContent(aiPrompt);
-          const aiResponse = aiResult.response.text();
-          const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-          const parsed = JSON.parse(cleanJson);
-          adCopy = parsed.adCopy;
-          generatedPostBody = parsed.postBody;
+          const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(manualCopy)}&model=${llmModel}&manualSearch=${encodeURIComponent(manualSearch)}`);
+          adCopy = aiRes.data.adCopy;
+          generatedPostBody = aiRes.data.postBody;
         } else {
           adCopy = manualCopy;
         }
       } else {
-        // BUILDER mode
         if (!builderSearch) {
           setError('Enter an image search term');
           setLoading(false);
@@ -411,46 +376,21 @@ function App() {
 
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
-
       const images = await fetchImages(searchTerm, 1, 4);
 
       if (images.length > 0) {
         setResult({
           image: images[0],
           boxes: [
-            {
-              id: 'main',
-              text: adCopy,
-              x: 0,
-              y: 0,
-              width: 550, // Wider default
-              fontSize: 'md',
-              fontFamily: 'sans'
-            },
-            {
-              id: 'watermark',
-              text: 'simp.ad',
-              x: -220, // Smidge left
-              y: 270, // Smidge down
-              width: 200,
-              fontSize: 'sm',
-              fontFamily: 'sans'
-            }
+            { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
+            { id: 'watermark', text: 'simp.ad', x: -220, y: 270, width: 200, fontSize: 'sm', fontFamily: 'sans' }
           ],
           imageBoxes: [
-            {
-              id: 'logo',
-              src: '/assets/logo.png',
-              x: 250, 
-              y: -250, // Pushed further up
-              width: 80
-            }
+            { id: 'logo', src: '/assets/logo.png', x: 250, y: -250, width: 80 }
           ],
           postBody: generatedPostBody
         });
-        if (images.length > 1) {
-          setThumbnails(images.slice(1));
-        }
+        if (images.length > 1) setThumbnails(images.slice(1));
       } else {
         setError('No relevant images found.');
       }
@@ -465,298 +405,136 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
+        <div className="header-left"></div>
         <h1 className="logo-text">
           simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
         </h1>
+        <div className="header-right">
+          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>⚙️</button>
+        </div>
         <p className="subtitle">Instant AI Ads</p>
       </header>
 
-      <div className="container">
-
-      <div className="mode-toggle">
-        <button 
-          className={mode === 'AUTO' ? 'active' : ''} 
-          onClick={() => setMode('AUTO')}
-        >
-          AUTO
-        </button>
-        <button 
-          className={mode === 'MANUAL' ? 'active' : ''} 
-          onClick={() => setMode('MANUAL')}
-        >
-          MANUAL
-        </button>
-        <button 
-          className={mode === 'BUILDER' ? 'active' : ''} 
-          onClick={() => setMode('BUILDER')}
-        >
-          BUILDER
-        </button>
-      </div>
-      
-      <div className="input-group">
-        {mode === 'AUTO' && (
-          <input 
-            type="text" 
-            value={prompt} 
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="What are we selling today?"
-            onKeyDown={(e) => e.key === 'Enter' && generateAd()}
-          />
-        )}
-        
-        {mode === 'MANUAL' && (
-          <div className="manual-container">
-            <div className="manual-fields">
-              <input 
-                type="text" 
-                value={manualSearch} 
-                onChange={(e) => setManualSearch(e.target.value)}
-                placeholder="Image Search (e.g. Mars)"
-              />
-              <input 
-                type="text" 
-                value={manualCopy} 
-                onChange={(e) => setManualCopy(e.target.value)}
-                placeholder="Ad Copy Hook (e.g. Ice Cream on Mars)"
-              />
+      {isSettingsOpen && (
+        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3>Settings</h3>
+            <div className="control-group">
+              <span className="control-label">AI Model</span>
+              <div className="vertical-pill-group">
+                {[
+                  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Default)' },
+                  { id: 'google/gemini-3-flash', name: 'Gemini 3 Flash (Stable)' },
+                  { id: 'google/gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' }
+                ].map(m => (
+                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
+                    {m.name}
+                  </button>
+                ))}
+              </div>
             </div>
-            <label className="checkbox-label">
-              <input 
-                type="checkbox" 
-                checked={aiPolish} 
-                onChange={(e) => setAiPolish(e.target.checked)} 
-              />
-              AI Polish Copy
-            </label>
+            <button className="primary-btn" onClick={() => setIsSettingsOpen(false)}>Close</button>
           </div>
-        )}
-
-        {mode === 'BUILDER' && (
-          <input 
-            type="text" 
-            value={builderSearch} 
-            onChange={(e) => setBuilderSearch(e.target.value)}
-            placeholder="Image Search (e.g. Skyline)"
-            onKeyDown={(e) => e.key === 'Enter' && generateAd()}
-          />
-        )}
-        <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>
-          {loading ? 'Simping...' : 'Generate'}
-        </button>
-      </div>
-
-      {thumbnails.length > 0 && (
-        <div className="thumbnails-container">
-          <div className="thumbnails-row">
-            <label className="upload-thumb">
-              <input type="file" hidden accept="image/*" onChange={handleMainImageUpload} />
-              <span>+</span>
-            </label>
-            {thumbnails.map((thumb, idx) => (
-              <img 
-                key={idx} 
-                src={thumb} 
-                alt="Option" 
-                className="thumbnail" 
-                onClick={() => setResult(prev => prev ? { ...prev, image: thumb } : null)}
-              />
-            ))}
-          </div>
-          <button 
-            className="refresh-thumbs-btn" 
-            onClick={refreshThumbnails} 
-            disabled={refreshingThumbs}
-            title="Load new images"
-          >
-            {refreshingThumbs ? '...' : '↻'}
-          </button>
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
-
-      {result && (
-        <div className="ad-preview">
-          <div className="platform-controls">
-             <div className="platform-icons">
-               {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                 <button 
-                   key={p}
-                   className={`platform-btn ${activePlatform === p ? 'active' : ''}`}
-                   onClick={() => {
-                     setActivePlatform(p);
-                     setFormat(PLATFORMS[p].ratios[0]);
-                   }}
-                   title={PLATFORMS[p].label}
-                 >
-                   {PLATFORM_ICONS[p]}
-                 </button>
-               ))}
-             </div>
-             
-             <div className="format-pills">
-               {PLATFORMS[activePlatform].ratios.map(f => (
-                 <button 
-                   key={f}
-                   className={format === f ? 'active' : ''}
-                   onClick={() => setFormat(f)}
-                 >
-                   {f.charAt(0).toUpperCase() + f.slice(1)}
-                 </button>
-               ))}
-             </div>
-          </div>
-
-          <div className="style-controls">
-            <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
-            <label className="add-text-btn" style={{ cursor: 'pointer' }}>
-              + Add Image
-              <input 
-                type="file" 
-                hidden 
-                accept="image/*" 
-                onChange={addImageBox}
-              />
-            </label>
-          </div>
-
-          <div 
-            ref={adContainerRef}
-            className={`ad-container ratio-${format}`}
-          >
-            <img src={result.image} alt="Ad background" />
-            <div className="overlay">
-              {result.boxes.map((box) => (
-                <div 
-                  key={box.id}
-                  className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`}
-                  style={{ 
-                    transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
-                    width: box.width,
-                    zIndex: editingBoxId === box.id ? 100 : 1
-                  }}
-                >
-                  <div 
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="editable-text"
-                    style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
-                    onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
-                    onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
-                    onFocus={() => setEditingBoxId(box.id)}
-                    onBlur={(e) => {
-                      updateBoxText(box.id, e.currentTarget.innerText || '');
-                      setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200);
-                    }}
-                  >
-                    {box.text}
-                  </div>
-                  
-                  {editingBoxId === box.id && (
-                    <div className="floating-controls" onMouseDown={e => e.stopPropagation()}>
-                      <div className="mini-pill-group">
-                        {['sm', 'md', 'lg'].map(sz => (
-                          <button 
-                            key={sz} 
-                            className={box.fontSize === sz ? 'active' : ''} 
-                            onClick={() => updateBoxFontSize(box.id, sz as any)}
-                          >
-                            {sz.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mini-pill-group">
-                        {['sans', 'serif', 'display'].map(f => (
-                          <button 
-                            key={f}
-                            className={box.fontFamily === f ? 'active' : ''} 
-                            onClick={() => updateBoxFontFamily(box.id, f as any)}
-                          >
-                            {f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div 
-                    className="resize-handle"
-                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
-                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
-                  />
-                  {result.boxes.length > 1 && (
-                    <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
-                  )}
-                </div>
-              ))}
-
-              {result.imageBoxes.map((box) => (
-                <div 
-                  key={box.id}
-                  className="text-box-wrapper"
-                  style={{ 
-                    transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
-                    width: box.width,
-                    zIndex: activeBoxId === box.id ? 100 : 1
-                  }}
-                >
-                  <img 
-                    src={box.src} 
-                    alt="Overlay" 
-                    className="editable-image"
-                    style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
-                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
-                    onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
-                  />
-                  <div 
-                    className="resize-handle"
-                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
-                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
-                  />
-                  <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {(result.postBody || mode === 'BUILDER') && (
-            <div className="post-body-container">
-              <div className="post-body-header">
-                <span className="control-label">Post Caption</span>
-                <button 
-                  className="copy-btn" 
-                  onClick={() => {
-                    navigator.clipboard.writeText(result.postBody || '');
-                    setToast('Copied to clipboard!');
-                  }}
-                >
-                  Copy
-                </button>
+      <div className="container">
+        <div className="mode-toggle">
+          {['AUTO', 'MANUAL', 'BUILDER'].map(m => (
+            <button key={m} className={mode === m ? 'active' : ''} onClick={() => setMode(m as any)}>{m}</button>
+          ))}
+        </div>
+        
+        <div className="input-group">
+          {mode === 'AUTO' && <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />}
+          {mode === 'MANUAL' && (
+            <div className="manual-container">
+              <div className="manual-fields">
+                <input type="text" value={manualSearch} onChange={(e) => setManualSearch(e.target.value)} placeholder="Image Search" />
+                <input type="text" value={manualCopy} onChange={(e) => setManualCopy(e.target.value)} placeholder="Ad Copy Hook" />
               </div>
-              <p 
-                className="post-body-text" 
-                contentEditable 
-                suppressContentEditableWarning
-                onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}
-              >
-                {(result.postBody || "Write your caption here...").split(' ').map((word, i) => 
-                  word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' '
-                )}
-              </p>
+              <label className="checkbox-label"><input type="checkbox" checked={aiPolish} onChange={(e) => setAiPolish(e.target.checked)} /> AI Polish Copy</label>
             </div>
           )}
-
-          <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
+          {mode === 'BUILDER' && <input type="text" value={builderSearch} onChange={(e) => setBuilderSearch(e.target.value)} placeholder="Image Search" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />}
+          <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>{loading ? 'Simping...' : 'Generate'}</button>
         </div>
-      )}
+
+        {thumbnails.length > 0 && (
+          <div className="thumbnails-container">
+            <div className="thumbnails-row">
+              <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+              {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => setResult(prev => prev ? { ...prev, image: thumb } : null)} />)}
+            </div>
+            <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>↻</button>
+          </div>
+        )}
+
+        {error && <p className="error">{error}</p>}
+
+        {result && (
+          <div className="ad-preview">
+            <div className="platform-controls">
+              <div className="platform-icons">
+                {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                  <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>
+                    {PLATFORM_ICONS[p]}
+                  </button>
+                ))}
+              </div>
+              <div className="format-pills">
+                {PLATFORMS[activePlatform].ratios.map(f => (
+                  <button key={f} className={format === f ? 'active' : ''} onClick={() => setFormat(f)}>{f.toUpperCase()}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="style-controls">
+              <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
+              <label className="add-text-btn" style={{ cursor: 'pointer' }}>+ Add Image<input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
+            </div>
+
+            <div ref={adContainerRef} className={`ad-container ratio-${format}`}>
+              <img src={result.image} alt="Ad background" />
+              <div className="overlay">
+                {result.boxes.map((box) => (
+                  <div key={box.id} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
+                    <div contentEditable suppressContentEditableWarning className="editable-text" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }} onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} onFocus={() => setEditingBoxId(box.id)} onBlur={(e) => { updateBoxText(box.id, e.currentTarget.innerText); setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200); }}>
+                      {box.text}
+                    </div>
+                    {editingBoxId === box.id && (
+                      <div className="floating-controls" onMouseDown={e => e.stopPropagation()}>
+                        <div className="mini-pill-group">{['sm', 'md', 'lg'].map(sz => <button key={sz} className={box.fontSize === sz ? 'active' : ''} onClick={() => updateBoxFontSize(box.id, sz as any)}>{sz.toUpperCase()}</button>)}</div>
+                        <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
+                      </div>
+                    )}
+                    <div className="resize-handle" onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
+                    {result.boxes.length > 1 && <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>}
+                  </div>
+                ))}
+                {result.imageBoxes.map((box) => (
+                  <div key={box.id} className="text-box-wrapper" style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: activeBoxId === box.id ? 100 : 1 }}>
+                    <img src={box.src} alt="Overlay" className="editable-image" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }} onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
+                    <div className="resize-handle" onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
+                    <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {(result.postBody || mode === 'BUILDER') && (
+              <div className="post-body-container">
+                <div className="post-body-header"><span className="control-label">Post Caption</span><button className="copy-btn" onClick={() => { navigator.clipboard.writeText(result.postBody || ''); setToast('Copied to clipboard!'); }}>Copy</button></div>
+                <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}>
+                  {(result.postBody || "Write your caption here...").split(' ').map((word, i) => word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' ')}
+                </p>
+              </div>
+            )}
+            <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
+          </div>
+        )}
       </div>
-
-      {toast && (
-        <div className="toast">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
