@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
 import './App.css';
 
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+const PLATFORMS = {
+  IG: { label: 'Instagram', ratios: ['square', 'portrait', 'story', 'landscape'] },
+  FB: { label: 'Facebook', ratios: ['square', 'landscape', 'portrait'] },
+  PIN: { label: 'Pinterest', ratios: ['portrait', 'square'] },
+  TK: { label: 'TikTok', ratios: ['story'] },
+  YT: { label: 'YouTube', ratios: ['landscape', 'story'] },
+  X: { label: 'X', ratios: ['landscape', 'square', 'portrait'] },
+};
 
 interface TextBox {
   id: string;
@@ -31,8 +41,9 @@ function App() {
   const [manualCopy, setManualCopy] = useState('');
   const [builderSearch, setBuilderSearch] = useState('');
   const [aiPolish, setAiPolish] = useState(true);
-  const [instaMode, setInstaMode] = useState(true);
+  const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
+  const adContainerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
@@ -72,7 +83,7 @@ function App() {
 
   // Drag Logic
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
-    // Sync current editing text before starting drag to prevent data loss
+    // Sync current editing text before starting drag
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       const activeId = result?.boxes.find(b => b.text === (document.activeElement as HTMLElement).innerText)?.id;
       if (activeId) updateBoxText(activeId, (document.activeElement as HTMLElement).innerText || '');
@@ -265,7 +276,7 @@ function App() {
     try {
       const canvas = await html2canvas(adContainerRef.current, {
         useCORS: true,
-        scale: 2, // High res
+        scale: 2,
         backgroundColor: null
       });
       const link = document.createElement('a');
@@ -595,7 +606,6 @@ function App() {
                     onFocus={() => setEditingBoxId(box.id)}
                     onBlur={(e) => {
                       updateBoxText(box.id, e.currentTarget.innerText || '');
-                      // Use timeout to allow clicking the control buttons before closing
                       setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200);
                     }}
                   >
