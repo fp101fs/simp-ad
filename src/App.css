@@ -259,7 +259,7 @@ input:focus { border-color: #ff0080; }
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
-  filter: grayscale(0.8);
+  opacity: 0.5; /* Default inactive state */
 }
 
 .platform-btn svg {
@@ -269,12 +269,12 @@ input:focus { border-color: #ff0080; }
 
 .platform-btn:hover {
   background: rgba(255,255,255,0.1);
-  filter: grayscale(0);
+  opacity: 0.8;
 }
 
 .platform-btn.active {
   background: #333;
-  filter: grayscale(0);
+  opacity: 1;
   transform: scale(1.05);
 }
 
