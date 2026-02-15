@@ -316,46 +316,13 @@ input:focus { border-color: #ff0080; }
   padding-bottom: 5rem;
 }
 
-.platform-controls {
+.style-controls {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 25px;
-}
-
-.platform-dropdown {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.platform-trigger {
-  display: flex;
+  justify-content: center;
   align-items: center;
   gap: 15px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid #333;
-  cursor: pointer;
-  padding: 10px 25px;
-  border-radius: 50px;
-  transition: all 0.2s;
-}
-
-.platform-trigger:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: #444;
-}
-
-.dropdown-arrow {
-  color: #888;
-  font-size: 1rem;
-  transition: transform 0.2s;
-}
-
-.dropdown-arrow.open {
-  transform: rotate(180deg);
+  margin-bottom: 25px;
+  flex-wrap: wrap;
 }
 
 .bg-selector-wrapper {
@@ -369,15 +336,49 @@ input:focus { border-color: #ff0080; }
   margin-bottom: 15px;
 }
 
+.platform-dropdown {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.platform-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid #333;
+  cursor: pointer;
+  padding: 5px 15px 5px 5px;
+  border-radius: 40px;
+  transition: all 0.2s;
+}
+
+.platform-trigger:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: #444;
+}
+
+.dropdown-arrow {
+  color: #888;
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
 .platform-icons.popup {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  margin-top: 15px;
+  margin-bottom: 15px;
   z-index: 500;
   box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-  animation: slideDown 0.2s ease-out;
+  animation: slideUpPopup 0.2s ease-out;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -385,6 +386,11 @@ input:focus { border-color: #ff0080; }
   border-radius: 32px;
   background: #111;
   border: 1px solid #333;
+}
+
+@keyframes slideUpPopup {
+  from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 .platform-row {
@@ -414,9 +420,19 @@ input:focus { border-color: #ff0080; }
   opacity: 0.5;
 }
 
+.platform-btn.small-btn {
+  width: 50px;
+  height: 50px;
+}
+
 .platform-btn svg {
   width: 45px;
   height: 45px;
+}
+
+.platform-btn.small-btn svg {
+  width: 28px;
+  height: 28px;
 }
 
 .platform-btn:hover {
@@ -469,13 +485,6 @@ input:focus { border-color: #ff0080; }
   text-decoration: underline;
 }
 
-.style-controls {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 25px;
-}
-
 .floating-controls {
   position: absolute;
   top: 100%;
@@ -520,10 +529,10 @@ input:focus { border-color: #ff0080; }
 
 .add-text-btn {
   background: rgba(255,255,255,0.1);
-  border: 1px dashed #444;
+  border: 1px solid #333;
   color: #aaa;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   padding: 12px 24px;
   border-radius: 30px;
   cursor: pointer;
@@ -534,7 +543,13 @@ input:focus { border-color: #ff0080; }
 .add-text-btn:hover {
   background: #fff;
   color: #000;
-  border-style: solid;
+  border-color: #fff;
+}
+
+.add-text-btn.active {
+  background: #333;
+  color: #fff;
+  border-color: #fff;
 }
 
 /* Font styles */
