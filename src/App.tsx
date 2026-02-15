@@ -190,12 +190,10 @@ function App() {
     setRefreshingThumbs(true);
     try {
       const nextPage = searchPage + 1;
-      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(currentSearchTerm)}&per_page=3&page=${nextPage}`, {
-        headers: { Authorization: PEXELS_API_KEY }
-      });
+      const images = await fetchImages(currentSearchTerm, nextPage, 3);
       
-      if (pexelsRes.data.photos.length > 0) {
-        setThumbnails(pexelsRes.data.photos.map((p: any) => p.src.large2x));
+      if (images.length > 0) {
+        setThumbnails(images);
         setSearchPage(nextPage);
       }
     } catch (err) {
@@ -380,13 +378,11 @@ function App() {
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
 
-      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=4&page=1`, {
-        headers: { Authorization: PEXELS_API_KEY }
-      });
+      const images = await fetchImages(searchTerm, 1, 4);
 
-      if (pexelsRes.data.photos.length > 0) {
+      if (images.length > 0) {
         setResult({
-          image: pexelsRes.data.photos[0].src.large2x,
+          image: images[0],
           boxes: [
             {
               id: 'main',
@@ -418,8 +414,8 @@ function App() {
           ],
           postBody: generatedPostBody
         });
-        if (pexelsRes.data.photos.length > 1) {
-          setThumbnails(pexelsRes.data.photos.slice(1).map((p: any) => p.src.large2x));
+        if (images.length > 1) {
+          setThumbnails(images.slice(1));
         }
       } else {
         setError('No relevant images found.');
