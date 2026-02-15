@@ -386,26 +386,71 @@ function App() {
                 )}
               </div>
 
-              <div className="bg-selector-wrapper" ref={bgRef}>
-                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>Edit BG {isBgSelectorOpen ? '▲' : '▼'}</button>
-                {isBgSelectorOpen && (
-                  <div className="platform-icons popup bg-popup">
-                    <div className="popup-search-bar">
-                      <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search background..." onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()} />
-                      <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
-                    </div>
-                    <div className="thumbnails-row">
-                      <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
-                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
-                      <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                            <div className="bg-selector-wrapper" ref={bgRef}>
 
-              <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
-              <label className="add-text-btn" style={{ cursor: 'pointer' }}>+ Add Image<input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
-            </div>
+                              <button 
+
+                                className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
+
+                                onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
+
+                              >
+
+                                ✏️ BG {isBgSelectorOpen ? '▲' : '▼'}
+
+                              </button>
+
+                              
+
+                              {isBgSelectorOpen && (
+
+                                <div className="platform-icons popup bg-popup">
+
+                                  <div className="popup-search-bar">
+
+                                    <input 
+
+                                      type="text" 
+
+                                      value={bgSearchQuery} 
+
+                                      onChange={(e) => setBgSearchQuery(e.target.value)}
+
+                                      placeholder="Search background..."
+
+                                      onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
+
+                                    />
+
+                                    <button className="popup-search-btn" onClick={handlePopupSearch}>🔍</button>
+
+                                  </div>
+
+                                  <div className="thumbnails-row">
+
+                                    <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+
+                                    {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+
+                                    <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>{refreshingThumbs ? '...' : '↻'}</button>
+
+                                  </div>
+
+                                </div>
+
+                              )}
+
+                            </div>
+
+              
+
+                            <button className="add-text-btn" onClick={addTextBox}>+ T</button>
+
+                            <label className="add-text-btn" style={{ cursor: 'pointer' }}>+ 🖼️<input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
+
+                          </div>
+
+              
 
             <div ref={adContainerRef} className={`ad-container ratio-${format}`}>
               <img src={result.image} alt="Ad background" />

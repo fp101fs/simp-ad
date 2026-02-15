@@ -333,9 +333,9 @@ input:focus { border-color: #ff0080; }
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
   margin-bottom: 25px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .bg-selector-wrapper {
