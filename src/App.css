@@ -358,6 +358,17 @@ input:focus { border-color: #ff0080; }
   transform: rotate(180deg);
 }
 
+.bg-selector-wrapper {
+  position: relative;
+}
+
+.bg-popup {
+  bottom: 100%;
+  top: auto !important;
+  margin-top: 0 !important;
+  margin-bottom: 15px;
+}
+
 .platform-icons.popup {
   position: absolute;
   top: 100%;

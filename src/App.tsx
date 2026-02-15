@@ -87,6 +87,7 @@ function App() {
   const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
+  const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
   const adContainerRef = useRef<HTMLDivElement>(null);
   
   const [loading, setLoading] = useState(false);
@@ -461,16 +462,6 @@ function App() {
           <button className="primary-btn" onClick={() => generateAd()} disabled={loading}>{loading ? 'Simping...' : 'Generate'}</button>
         </div>
 
-        {thumbnails.length > 0 && (
-          <div className="thumbnails-container">
-            <div className="thumbnails-row">
-              <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
-              {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => setResult(prev => prev ? { ...prev, image: thumb } : null)} />)}
-            </div>
-            <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}>↻</button>
-          </div>
-        )}
-
         {error && <p className="error">{error}</p>}
 
         {result && (
@@ -524,6 +515,45 @@ function App() {
             </div>
 
             <div className="style-controls">
+              <div className="bg-selector-wrapper">
+                <button 
+                  className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
+                  onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
+                >
+                  Edit BG {isBgSelectorOpen ? '▲' : '▼'}
+                </button>
+                
+                {isBgSelectorOpen && (
+                  <div className="platform-icons popup bg-popup">
+                    <div className="thumbnails-row">
+                      <label className="upload-thumb">
+                        <input type="file" hidden accept="image/*" onChange={handleMainImageUpload} />
+                        <span>+</span>
+                      </label>
+                      {thumbnails.map((thumb, idx) => (
+                        <img 
+                          key={idx} 
+                          src={thumb} 
+                          alt="Option" 
+                          className="thumbnail" 
+                          onClick={() => {
+                            setResult(prev => prev ? { ...prev, image: thumb } : null);
+                            setIsBgSelectorOpen(false);
+                          }} 
+                        />
+                      ))}
+                      <button 
+                        className="refresh-thumbs-btn" 
+                        onClick={refreshThumbnails} 
+                        disabled={refreshingThumbs}
+                      >
+                        {refreshingThumbs ? '...' : '↻'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button className="add-text-btn" onClick={addTextBox}>+ Add Text</button>
               <label className="add-text-btn" style={{ cursor: 'pointer' }}>+ Add Image<input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
             </div>
