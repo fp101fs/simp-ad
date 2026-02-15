@@ -750,6 +750,8 @@ function App() {
           <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
         </div>
       )}
+      </div>
+
       {toast && (
         <div className="toast">
           {toast}
