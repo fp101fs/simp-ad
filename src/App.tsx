@@ -303,13 +303,17 @@ function App() {
       setSearchPage(1);
       const images = await fetchImages(searchTerm, 1, 4);
       if (images.length > 0) {
+        const isMobile = window.innerWidth < 600;
+        const cornerX = isMobile ? 130 : 250;
+        const cornerY = isMobile ? 130 : 250;
+
         setResult({
           image: images[0],
           boxes: [
             { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
-            { id: 'watermark', text: 'simp.ad', x: -130, y: 130, width: 200, fontSize: 'sm', fontFamily: 'sans' }
+            { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans' }
           ],
-          imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: 130, y: -130, width: 80 }],
+          imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
           postBody: generatedPostBody
         });
         if (images.length > 1) setThumbnails(images.slice(1));
