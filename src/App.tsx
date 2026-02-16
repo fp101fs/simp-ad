@@ -121,6 +121,21 @@ function App() {
     if (urlPrompt) {
       setPrompt(urlPrompt);
       generateAd(urlPrompt);
+    } else {
+      // Show Demo Ad
+      const isMobile = window.innerWidth < 600;
+      const cornerX = isMobile ? 130 : 250;
+      const cornerY = isMobile ? 130 : 250;
+
+      setResult({
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop',
+        boxes: [
+          { id: 'main', text: 'Healthy living made simple.', x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
+          { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans' }
+        ],
+        imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
+        postBody: "Experience the ease of healthy choices with our intuitive wellness guide. 🌿 #healthylifestyle #wellness #simpleliving"
+      });
     }
   }, []);
 
