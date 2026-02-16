@@ -424,7 +424,7 @@ input:focus {
 .platform-icons.popup {
   position: absolute;
   top: 100%;
-  left: calc(50% + 60px) !important;
+  left: calc(50% + 80px) !important;
   transform: translateX(-50%);
   margin-top: 15px;
   z-index: 500;
