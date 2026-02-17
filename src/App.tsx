@@ -168,16 +168,23 @@ function App() {
         boxes: result.boxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b),
         imageBoxes: result.imageBoxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b)
       });
-    } else if (activeResizeId) {
-      const deltaX = (clientX - resizeStart.x) * 2;
-      const deltaY = (clientY - resizeStart.y) * 2;
-      const imageDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-      setResult({
-        ...result,
-        boxes: result.boxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b),
-        imageBoxes: result.imageBoxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b)
-      });
-    }
+        } else if (activeResizeId) {
+          const deltaX = (clientX - resizeStart.x) * 2;
+          
+          setResult({
+            ...result,
+            boxes: result.boxes.map(b => 
+              b.id === activeResizeId ? { 
+                ...b, 
+                width: Math.max(50, resizeStart.width + deltaX)
+              } : b
+            ),
+            imageBoxes: result.imageBoxes.map(b => 
+              b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + deltaX) } : b
+            )
+          });
+        }
+    
   };
 
   const handleDragEnd = () => {
