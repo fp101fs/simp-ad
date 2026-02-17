@@ -336,10 +336,7 @@ input:focus {
 }
 
 .mode-toggle {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 1.5rem;
+  display: none;
 }
 
 .mode-toggle button {
@@ -376,11 +373,11 @@ input:focus {
 }
 
 .bg-selector-wrapper {
-  position: static;
+  position: relative;
 }
 
 .platform-dropdown {
-  position: static;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -398,6 +395,21 @@ input:focus {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  padding: 15px;
+  border-radius: 24px;
+  background: #111;
+  border: 1px solid #333;
+  box-sizing: border-box;
+}
+
+.platform-icons.popup {
+  width: 230px;
+}
+
+.bg-popup {
+  width: 300px;
+  max-width: 90vw;
+}
   padding: 15px;
   border-radius: 24px;
   background: #111;

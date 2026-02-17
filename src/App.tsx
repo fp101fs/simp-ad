@@ -78,7 +78,6 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
 
 function App() {
   const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<'AUTO' | 'BUILDER'>('AUTO');
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
   const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
@@ -135,11 +134,9 @@ function App() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
-    const urlMode = searchParams.get('mode');
     const urlPlatform = searchParams.get('platform');
     const urlBg = searchParams.get('bg');
 
-    if (urlMode === 'AUTO' || urlMode === 'BUILDER') setMode(urlMode as any);
     if (urlPlatform && PLATFORMS[urlPlatform as keyof typeof PLATFORMS]) {
       setActivePlatform(urlPlatform as keyof typeof PLATFORMS);
       setFormat(PLATFORMS[urlPlatform as keyof typeof PLATFORMS].ratios[0]);
@@ -147,7 +144,6 @@ function App() {
     
     if (urlPrompt) {
       setPrompt(urlPrompt);
-      // Pass both prompt and BG term if present
       generateAd(urlPrompt, urlBg || undefined);
     } else {
       const isMobile = window.innerWidth < 600;
@@ -372,6 +368,16 @@ function App() {
     } catch (err) { console.error(err); setToast('Failed to save image.'); }
   };
 
+  const handleShare = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('prompt', prompt);
+    url.searchParams.set('platform', activePlatform);
+    if (currentSearchTerm) url.searchParams.set('bg', currentSearchTerm);
+    
+    navigator.clipboard.writeText(url.toString());
+    setToast('Link copied to clipboard!');
+  };
+
   const generateAd = async (promptOverride?: string, bgTerm?: string) => {
     const query = promptOverride || prompt;
     if (!query) { setError('Please enter a prompt'); return; }
@@ -387,20 +393,10 @@ function App() {
     const textShadow = searchParams.get('textShadow') !== 'false';
 
     try {
-      let searchTerm = '';
-      let adCopy = '';
-      let generatedPostBody = '';
-
-      if (mode === 'AUTO') {
-        const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
-        searchTerm = bgTerm || aiRes.data.searchTerm;
-        adCopy = aiRes.data.adCopy;
-        generatedPostBody = aiRes.data.postBody;
-      } else if (mode === 'BUILDER') {
-        searchTerm = bgTerm || 'background';
-        adCopy = 'Click me to edit';
-        generatedPostBody = '';
-      }
+      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
+      const searchTerm = bgTerm || aiRes.data.searchTerm;
+      const adCopy = aiRes.data.adCopy;
+      const generatedPostBody = aiRes.data.postBody;
 
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
@@ -430,8 +426,11 @@ function App() {
         <div className="header-left"></div>
         <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
         <div className="header-right">
+          <button className="settings-btn" onClick={handleShare} title="Share Setup">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
           <button className="settings-btn" onClick={() => { console.log('Settings: OPEN'); setIsSettingsOpen(true); }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
         <p className="subtitle">Instant AI Ads</p>
@@ -462,10 +461,6 @@ function App() {
       )}
 
       <div className="container">
-        <div className="mode-toggle">
-          <button className={mode === 'AUTO' ? 'active' : ''} onClick={() => { console.log('Mode: AUTO'); setMode('AUTO'); }}>AUTO</button>
-          <button className={mode === 'BUILDER' ? 'active' : ''} onClick={() => { console.log('Mode: BUILDER'); setMode('BUILDER'); }}>BUILDER</button>
-        </div>
         <div className="input-group">
           <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
           <button className="go-btn" onClick={() => generateAd()} disabled={loading}>
@@ -546,7 +541,9 @@ function App() {
                       onBlur={(e) => { 
                         updateBoxText(box.id, e.currentTarget.innerText); 
                         setTimeout(() => {
-                          // Allow blur if not interacting with tools
+                          if (!editorRef.current?.contains(document.activeElement)) {
+                            setEditingBoxId(prev => prev === box.id ? null : prev);
+                          }
                         }, 200);
                       }}
                     >
@@ -600,7 +597,7 @@ function App() {
               </div>
             </div>
 
-            {(result.postBody || mode === 'BUILDER') && (
+            {result.postBody && (
               <div className="post-body-container">
                 <div className="post-body-header"><span className="control-label">Post Caption</span><button className="copy-btn" onClick={() => { navigator.clipboard.writeText(result.postBody || ''); setToast('Copied to clipboard!'); }}>Copy</button></div>
                 <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}>
