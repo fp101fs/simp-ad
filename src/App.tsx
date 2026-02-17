@@ -94,6 +94,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
 
+  // New state to track which styling menu is open
+  const [activePicker, setActivePicker] = useState<{ id: string, type: 'color' | 'color2' | 'outline' | 'shadow' } | null>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
@@ -104,6 +107,7 @@ function App() {
         const isClickingBox = result?.boxes.some(b => document.getElementById(`box-${b.id}`)?.contains(event.target as Node));
         if (!isClickingBox) {
           setEditingBoxId(null);
+          setActivePicker(null); // Close picker too
         }
       }
     };
@@ -136,11 +140,19 @@ function App() {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
     const urlMode = searchParams.get('mode');
+    const urlPlatform = searchParams.get('platform');
+    const urlBg = searchParams.get('bg');
+
     if (urlMode === 'AUTO' || urlMode === 'BUILDER') setMode(urlMode as any);
+    if (urlPlatform && PLATFORMS[urlPlatform as keyof typeof PLATFORMS]) {
+      setActivePlatform(urlPlatform as keyof typeof PLATFORMS);
+      setFormat(PLATFORMS[urlPlatform as keyof typeof PLATFORMS].ratios[0]);
+    }
     
     if (urlPrompt) {
       setPrompt(urlPrompt);
-      generateAd(urlPrompt);
+      // Pass both prompt and BG term if present
+      generateAd(urlPrompt, urlBg || undefined);
     } else {
       const isMobile = window.innerWidth < 600;
       const cornerX = isMobile ? 130 : 250;
@@ -364,7 +376,7 @@ function App() {
     } catch (err) { console.error(err); setToast('Failed to save image.'); }
   };
 
-  const generateAd = async (promptOverride?: string) => {
+  const generateAd = async (promptOverride?: string, bgTerm?: string) => {
     const query = promptOverride || prompt;
     if (!query) { setError('Please enter a prompt'); return; }
     setLoading(true);
@@ -379,8 +391,21 @@ function App() {
     const textShadow = searchParams.get('textShadow') !== 'false';
 
     try {
-      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
-      const { searchTerm, adCopy, postBody: generatedPostBody } = aiRes.data;
+      let searchTerm = '';
+      let adCopy = '';
+      let generatedPostBody = '';
+
+      if (mode === 'AUTO') {
+        const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
+        searchTerm = bgTerm || aiRes.data.searchTerm;
+        adCopy = aiRes.data.adCopy;
+        generatedPostBody = aiRes.data.postBody;
+      } else if (mode === 'BUILDER') {
+        searchTerm = bgTerm || 'background';
+        adCopy = 'Click me to edit';
+        generatedPostBody = '';
+      }
+
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
       const images = await fetchImages(searchTerm, 1, 4);
@@ -410,7 +435,7 @@ function App() {
         <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
         <div className="header-right">
           <button className="settings-btn" onClick={() => { console.log('Settings: OPEN'); setIsSettingsOpen(true); }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
         <p className="subtitle">Instant AI Ads</p>
@@ -524,6 +549,9 @@ function App() {
                       onFocus={() => { console.log('Editor: OPEN'); setEditingBoxId(box.id); }} 
                       onBlur={(e) => { 
                         updateBoxText(box.id, e.currentTarget.innerText); 
+                        setTimeout(() => {
+                          // Allow blur if not interacting with tools
+                        }, 200);
                       }}
                     >
                       {box.text}
@@ -534,15 +562,14 @@ function App() {
                         <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
                         <div className="mini-pill-group color-controls">
                           <div className="color-btn-wrapper">
-                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Text Color">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l5 5"/><path d="M9.5 14.5L16 8"/></svg>
+                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Solid Color">
                               <div className="color-swatch" style={{ background: box.color }} />
                             </button>
-                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, box.isGradient)} />
+                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} />
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, !box.isGradient)} title="Toggle Gradient">🌈</button>
+                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, !box.isGradient)} title="Gradient">🌈</button>
                             {box.isGradient && (
                               <div className="dual-picker">
                                 <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Color 1" />
@@ -552,16 +579,12 @@ function App() {
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Toggle Outline">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M7 7h10v10H7z"/></svg>
-                            </button>
+                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Outline">🔲</button>
                             {box.outline && <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} />}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Toggle Shadow">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5z"/></svg>
-                            </button>
+                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Shadow">🌑</button>
                             {box.shadow && <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} />}
                           </div>
                         </div>
