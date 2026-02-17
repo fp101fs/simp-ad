@@ -21,7 +21,7 @@ body {
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem !important;
   text-align: center;
   overflow-x: hidden;
 }
@@ -54,6 +54,7 @@ body {
 .settings-btn {
   background: transparent;
   border: none;
+  font-size: 1.5rem;
   cursor: pointer;
   opacity: 0.6;
   transition: opacity 0.2s;
@@ -174,10 +175,12 @@ h1 {
   align-items: center;
   margin-bottom: 2rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 input {
   flex: 1;
+  width: 100%;
   box-sizing: border-box;
   padding: 18px 80px 18px 24px;
   border-radius: 40px;
@@ -206,7 +209,7 @@ input:focus {
 
 .go-btn {
   position: absolute;
-  right: -6px;
+  right: 0px;
   width: 72px;
   height: 72px;
   min-width: 72px;
@@ -225,13 +228,18 @@ input:focus {
   z-index: 10;
 }
 
+.go-btn svg {
+  width: 32px;
+  height: 32px;
+}
+
 .go-btn:hover {
   transform: scale(1.05);
   background: #eee;
 }
 
 .go-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.8;
   cursor: not-allowed;
 }
 
@@ -343,16 +351,47 @@ input:focus {
 }
 
 .bg-selector-wrapper {
-  position: relative;
+  position: static;
+}
+
+.platform-dropdown {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bg-popup, .platform-icons.popup {
+  position: absolute;
+  bottom: 100%;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  margin-bottom: 15px !important;
+  z-index: 500;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+  animation: slideUpPopup 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 24px;
+  background: #111;
+  border: 1px solid #333;
+  box-sizing: border-box;
+}
+
+.platform-icons.popup {
+  width: 230px;
 }
 
 .bg-popup {
-  top: 100% !important;
-  bottom: auto !important;
-  margin-top: 15px !important;
-  margin-bottom: 0 !important;
   width: calc(100vw - 40px);
   max-width: 360px;
+}
+
+@keyframes slideUpPopup {
+  from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 .popup-search-bar {
@@ -371,6 +410,8 @@ input:focus {
   height: 45px;
   background: #1a1a1a;
   border: 1px solid #333;
+  animation: none;
+  box-shadow: none;
 }
 
 .popup-search-btn {
@@ -385,13 +426,6 @@ input:focus {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-}
-
-.platform-dropdown {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .platform-trigger {
@@ -419,31 +453,6 @@ input:focus {
 
 .dropdown-arrow.open {
   transform: rotate(180deg);
-}
-
-.platform-icons.popup {
-  position: absolute;
-  top: 100%;
-  left: calc(50% + 70px) !important;
-  transform: translateX(-50%);
-  margin-top: 15px;
-  z-index: 500;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-  animation: slideDownPopup 0.2s ease-out;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 15px;
-  border-radius: 24px;
-  background: #111;
-  border: 1px solid #333;
-  width: 230px; /* Adjusted for 3 columns */
-  box-sizing: border-box;
-}
-
-@keyframes slideDownPopup {
-  from { transform: translateX(-50%) translateY(-10px); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
 .platform-row {
@@ -582,6 +591,11 @@ input:focus {
   background: #fff;
   color: #000;
 }
+
+/* Color toggle buttons */
+.color-white { color: #fff !important; text-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+.color-black { color: #000 !important; text-shadow: none; }
+.color-accent { color: #ff0080 !important; text-shadow: 0 4px 15px rgba(0,0,0,0.4); }
 
 .add-text-btn {
   background: rgba(255,255,255,0.1);
