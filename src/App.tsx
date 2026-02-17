@@ -98,14 +98,18 @@ function App() {
     const handleClickOutside = (event: MouseEvent) => {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
       if (bgRef.current && !bgRef.current.contains(event.target as Node)) setIsBgSelectorOpen(false);
-      // Close editor only if clicking outside the text box AND outside the floating controls
+      
+      // Close editor if clicking outside everything related to it
       if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
-        // We use a small delay or check related target to avoid closing when native picker opens
+        const isClickingBox = result?.boxes.some(b => document.getElementById(`box-${b.id}`)?.contains(event.target as Node));
+        if (!isClickingBox) {
+          setEditingBoxId(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [result]);
   
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
@@ -132,7 +136,7 @@ function App() {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
     const urlMode = searchParams.get('mode');
-    if (urlMode === 'AUTO' || urlMode === 'BUILDER') setMode(urlMode);
+    if (urlMode === 'AUTO' || urlMode === 'BUILDER') setMode(urlMode as any);
     
     if (urlPrompt) {
       setPrompt(urlPrompt);
@@ -145,8 +149,8 @@ function App() {
       setResult({
         image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop',
         boxes: [
-          { id: 'main', text: 'Healthy living made simple.', x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' },
-          { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' }
+          { id: 'main', text: 'Healthy living made simple.', x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' },
+          { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' }
         ],
         imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
         postBody: "Experience the ease of healthy choices with our intuitive wellness guide. 🌿 #healthylifestyle #wellness #simpleliving"
@@ -250,143 +254,67 @@ function App() {
     }
   };
 
-    const updateBoxText = (id: string, text: string) => {
-
-      if (!result) return;
-
-      console.log('Text Update:', { id, text });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b)
-
-      });
-
-    };
-
-  
-
-    const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
-
-      if (!result) return;
-
-      console.log('Font Size:', { id, fontSize });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b)
-
-      });
-
-    };
-
-  
-
-    const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
-
-      if (!result) return;
-
-      console.log('Font Family:', { id, fontFamily });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b)
-
-      });
-
-    };
-
-  
-
-    const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
-
-      if (!result) return;
-
-      console.log('Color Update:', { id, color, color2, isGradient });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { 
-
-          ...b, 
-
-          color, 
-
-          color2: color2 || b.color2 || '#7928ca',
-
-          isGradient: isGradient !== undefined ? isGradient : b.isGradient 
-
-        } : b)
-
-      });
-
-    };
-
-  
-
-    const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
-
-      if (!result) return;
-
-      console.log('Outline Update:', { id, outline, color });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { 
-
-          ...b, 
-
-          outline, 
-
-          outlineColor: color || b.outlineColor || '#000000' 
-
-        } : b)
-
-      });
-
-    };
-
-  
-
-    const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
-
-      if (!result) return;
-
-      console.log('Shadow Update:', { id, shadow, color });
-
-      setResult({
-
-        ...result,
-
-        boxes: result.boxes.map(b => b.id === id ? { 
-
-          ...b, 
-
-          shadow, 
-
-          shadowColor: color || b.shadowColor || 'rgba(0,0,0,0.6)' 
-
-        } : b)
-
-      });
-
-    };
-
-  
+  const updateBoxText = (id: string, text: string) => {
+    if (!result) return;
+    console.log('Text Update:', { id, text });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b) });
+  };
+
+  const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
+    if (!result) return;
+    console.log('Font Size:', { id, fontSize });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b) });
+  };
+
+  const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
+    if (!result) return;
+    console.log('Font Family:', { id, fontFamily });
+    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
+  };
+
+  const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
+    if (!result) return;
+    console.log('Color Update:', { id, color, color2, isGradient });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        color, 
+        color2: color2 || b.color2 || '#7928ca',
+        isGradient: isGradient !== undefined ? isGradient : b.isGradient 
+      } : b)
+    });
+  };
+
+  const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
+    if (!result) return;
+    console.log('Outline Update:', { id, outline, color });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        outline, 
+        outlineColor: color || b.outlineColor || '#000000' 
+      } : b)
+    });
+  };
+
+  const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
+    if (!result) return;
+    console.log('Shadow Update:', { id, shadow, color });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        shadow, 
+        shadowColor: color || b.shadowColor || '#000000' 
+      } : b)
+    });
+  };
 
   const addTextBox = () => {
     if (!result) return;
-    const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' };
+    const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' };
     setResult({ ...result, boxes: [...result.boxes, newBox] });
   };
 
@@ -464,8 +392,8 @@ function App() {
         setResult({
           image: images[0],
           boxes: [
-            { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: textColor, isGradient: textGradient, outline: textOutline, outlineColor: '#000000', shadow: textShadow, shadowColor: 'rgba(0,0,0,0.6)' },
-            { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' }
+            { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: textColor, isGradient: textGradient, outline: textOutline, outlineColor: '#000000', shadow: textShadow, shadowColor: '#000000' },
+            { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' }
           ],
           imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
           postBody: generatedPostBody
@@ -576,7 +504,7 @@ function App() {
               <img src={result.image} alt="Ad background" />
               <div className="overlay">
                 {result.boxes.map((box) => (
-                  <div key={box.id} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
+                  <div key={box.id} id={`box-${box.id}`} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
                     <div 
                       contentEditable 
                       suppressContentEditableWarning 
@@ -587,20 +515,15 @@ function App() {
                         backgroundImage: box.isGradient ? `linear-gradient(45deg, ${box.color}, ${box.color2 || '#7928ca'})` : 'none', 
                         backgroundClip: box.isGradient ? 'text' : 'border-box', 
                         WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box', 
-                        WebkitTextStroke: box.outline ? `1px ${box.outlineColor}` : '0', 
+                        WebkitTextStroke: box.outline ? `1.5px ${box.outlineColor}` : '0', 
                         textShadow: box.shadow && !box.isGradient ? `0 4px 15px ${box.shadowColor}` : 'none',
                         filter: box.shadow && box.isGradient ? `drop-shadow(0 4px 15px ${box.shadowColor})` : 'none'
                       }} 
                       onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} 
                       onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} 
-                      onFocus={() => setEditingBoxId(box.id)} 
+                      onFocus={() => { console.log('Editor: OPEN'); setEditingBoxId(box.id); }} 
                       onBlur={(e) => { 
                         updateBoxText(box.id, e.currentTarget.innerText); 
-                        setTimeout(() => {
-                          if (!editorRef.current?.contains(document.activeElement)) {
-                            setEditingBoxId(prev => prev === box.id ? null : prev);
-                          }
-                        }, 200);
                       }}
                     >
                       {box.text}
@@ -611,14 +534,15 @@ function App() {
                         <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
                         <div className="mini-pill-group color-controls">
                           <div className="color-btn-wrapper">
-                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)}>
+                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Text Color">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l5 5"/><path d="M9.5 14.5L16 8"/></svg>
                               <div className="color-swatch" style={{ background: box.color }} />
                             </button>
-                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} />
+                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, box.isGradient)} />
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, true)}>🌈</button>
+                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, !box.isGradient)} title="Toggle Gradient">🌈</button>
                             {box.isGradient && (
                               <div className="dual-picker">
                                 <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Color 1" />
@@ -628,12 +552,16 @@ function App() {
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)}>🔲</button>
+                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Toggle Outline">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M7 7h10v10H7z"/></svg>
+                            </button>
                             {box.outline && <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} />}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)}>🌑</button>
+                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Toggle Shadow">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5z"/></svg>
+                            </button>
                             {box.shadow && <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} />}
                           </div>
                         </div>
