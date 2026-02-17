@@ -250,57 +250,139 @@ function App() {
     }
   };
 
-  const updateBoxText = (id: string, text: string) => {
-    if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b) });
-  };
+    const updateBoxText = (id: string, text: string) => {
 
-  const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
-    if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b) });
-  };
+      if (!result) return;
 
-  const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
-    if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
-  };
+      console.log('Text Update:', { id, text });
 
-  const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
-    if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        color, 
-        color2: color2 || b.color2 || '#7928ca',
-        isGradient: isGradient !== undefined ? isGradient : b.isGradient 
-      } : b)
-    });
-  };
+      setResult({
 
-  const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
-    if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        outline, 
-        outlineColor: color || b.outlineColor || '#000000' 
-      } : b)
-    });
-  };
+        ...result,
 
-  const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
-    if (!result) return;
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        shadow, 
-        shadowColor: color || b.shadowColor || 'rgba(0,0,0,0.6)' 
-      } : b)
-    });
-  };
+        boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b)
+
+      });
+
+    };
+
+  
+
+    const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
+
+      if (!result) return;
+
+      console.log('Font Size:', { id, fontSize });
+
+      setResult({
+
+        ...result,
+
+        boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b)
+
+      });
+
+    };
+
+  
+
+    const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
+
+      if (!result) return;
+
+      console.log('Font Family:', { id, fontFamily });
+
+      setResult({
+
+        ...result,
+
+        boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b)
+
+      });
+
+    };
+
+  
+
+    const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
+
+      if (!result) return;
+
+      console.log('Color Update:', { id, color, color2, isGradient });
+
+      setResult({
+
+        ...result,
+
+        boxes: result.boxes.map(b => b.id === id ? { 
+
+          ...b, 
+
+          color, 
+
+          color2: color2 || b.color2 || '#7928ca',
+
+          isGradient: isGradient !== undefined ? isGradient : b.isGradient 
+
+        } : b)
+
+      });
+
+    };
+
+  
+
+    const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
+
+      if (!result) return;
+
+      console.log('Outline Update:', { id, outline, color });
+
+      setResult({
+
+        ...result,
+
+        boxes: result.boxes.map(b => b.id === id ? { 
+
+          ...b, 
+
+          outline, 
+
+          outlineColor: color || b.outlineColor || '#000000' 
+
+        } : b)
+
+      });
+
+    };
+
+  
+
+    const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
+
+      if (!result) return;
+
+      console.log('Shadow Update:', { id, shadow, color });
+
+      setResult({
+
+        ...result,
+
+        boxes: result.boxes.map(b => b.id === id ? { 
+
+          ...b, 
+
+          shadow, 
+
+          shadowColor: color || b.shadowColor || 'rgba(0,0,0,0.6)' 
+
+        } : b)
+
+      });
+
+    };
+
+  
 
   const addTextBox = () => {
     if (!result) return;
@@ -399,7 +481,7 @@ function App() {
         <div className="header-left"></div>
         <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
         <div className="header-right">
-          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>
+          <button className="settings-btn" onClick={() => { console.log('Settings: OPEN'); setIsSettingsOpen(true); }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
@@ -407,7 +489,7 @@ function App() {
       </header>
 
       {isSettingsOpen && (
-        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+        <div className="modal-overlay" onClick={() => { console.log('Settings: CLOSE'); setIsSettingsOpen(false); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Settings</h3>
             <div className="control-group">
@@ -418,22 +500,22 @@ function App() {
                   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
                   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
                 ].map(m => (
-                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
+                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => { console.log('Model Switch:', m.id); setLlmModel(m.id); }}>
                     <span className="model-name">{m.name}</span>
                     <span className="model-id">{m.id}</span>
                   </button>
                 ))}
               </div>
             </div>
-            <button className="primary-btn" onClick={() => setIsSettingsOpen(false)}>Close</button>
+            <button className="primary-btn" onClick={() => { console.log('Settings: CLOSE'); setIsSettingsOpen(false); }}>Close</button>
           </div>
         </div>
       )}
 
       <div className="container">
         <div className="mode-toggle">
-          <button className={mode === 'AUTO' ? 'active' : ''} onClick={() => setMode('AUTO')}>AUTO</button>
-          <button className={mode === 'BUILDER' ? 'active' : ''} onClick={() => setMode('BUILDER')}>BUILDER</button>
+          <button className={mode === 'AUTO' ? 'active' : ''} onClick={() => { console.log('Mode: AUTO'); setMode('AUTO'); }}>AUTO</button>
+          <button className={mode === 'BUILDER' ? 'active' : ''} onClick={() => { console.log('Mode: BUILDER'); setMode('BUILDER'); }}>BUILDER</button>
         </div>
         <div className="input-group">
           <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
@@ -448,7 +530,7 @@ function App() {
           <div className="ad-preview">
             <div className="style-controls">
               <div className="platform-dropdown" ref={platformRef}>
-                <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
+                <button className="platform-trigger" onClick={() => { console.log('Platform Dropdown:', !isPlatformSelectorOpen ? 'OPEN' : 'CLOSE'); setIsPlatformSelectorOpen(!isPlatformSelectorOpen); }}>
                   <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
                   <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
                 </button>
@@ -456,18 +538,18 @@ function App() {
                   <div className="platform-icons popup">
                     <div className="platform-row">
                       {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
+                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { console.log('Platform Selection:', p); setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
                       ))}
                     </div>
                     <div className="format-pills dropdown-pills">
-                      {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
+                      {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { console.log('Format Selection:', f); setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
                     </div>
                   </div>
                 )}
               </div>
 
               <div className="bg-selector-wrapper" ref={bgRef}>
-                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>
+                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => { console.log('BG Selector:', !isBgSelectorOpen ? 'OPEN' : 'CLOSE'); setIsBgSelectorOpen(!isBgSelectorOpen); }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
                 </button>
