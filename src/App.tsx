@@ -94,9 +94,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
 
-  // New state to track which styling menu is open
-  const [activePicker, setActivePicker] = useState<{ id: string, type: 'color' | 'color2' | 'outline' | 'shadow' } | null>(null);
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
@@ -107,7 +104,6 @@ function App() {
         const isClickingBox = result?.boxes.some(b => document.getElementById(`box-${b.id}`)?.contains(event.target as Node));
         if (!isClickingBox) {
           setEditingBoxId(null);
-          setActivePicker(null); // Close picker too
         }
       }
     };
