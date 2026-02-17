@@ -597,6 +597,29 @@ input:focus {
 .color-black { color: #000 !important; text-shadow: none; }
 .color-accent { color: #ff0080 !important; text-shadow: 0 4px 15px rgba(0,0,0,0.4); }
 
+.color-controls {
+  gap: 0;
+}
+
+.mini-pill-group input[type="color"] {
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.mini-pill-group input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.mini-pill-group input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}
+
 .add-text-btn {
   background: rgba(255,255,255,0.1);
   border: 1px solid #333;

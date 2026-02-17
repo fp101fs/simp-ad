@@ -32,6 +32,12 @@ interface TextBox {
   width: number;
   fontSize: 'sm' | 'md' | 'lg';
   fontFamily: 'sans' | 'serif' | 'display';
+  color: string;
+  isGradient: boolean;
+  outline: boolean;
+  outlineColor: string;
+  shadow: boolean;
+  shadowColor: string;
 }
 
 interface ImageBox {
@@ -42,8 +48,11 @@ interface ImageBox {
   width: number;
 }
 
+// Helper to fetch images from Unsplash with fallback to Pexels
 const fetchImages = async (query: string, page: number, perPage: number): Promise<string[]> => {
   let images: string[] = [];
+
+  // Try Unsplash first
   if (UNSPLASH_ACCESS_KEY) {
     try {
       const unsplashRes = await axios.get(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}&client_id=${UNSPLASH_ACCESS_KEY}`);
@@ -54,6 +63,8 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       console.warn('Unsplash fetch failed, falling back to Pexels', err);
     }
   }
+
+  // Fallback to Pexels if Unsplash failed or returned no results
   if (images.length === 0) {
     try {
       const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`, {
@@ -66,6 +77,7 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       console.error('Pexels fetch failed', err);
     }
   }
+
   return images;
 };
 
@@ -108,6 +120,7 @@ function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState('');
 
+  // Auto-clear toast
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 2000);
@@ -115,6 +128,7 @@ function App() {
     }
   }, [toast]);
 
+  // Handle URL params on mount or show demo
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
@@ -130,8 +144,36 @@ function App() {
       setResult({
         image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop',
         boxes: [
-          { id: 'main', text: 'Healthy living made simple.', x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
-          { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans' }
+          { 
+            id: 'main', 
+            text: 'Healthy living made simple.', 
+            x: 0, 
+            y: 0, 
+            width: 550, 
+            fontSize: 'md', 
+            fontFamily: 'sans',
+            color: '#ffffff',
+            isGradient: false,
+            outline: false,
+            outlineColor: '#000000',
+            shadow: true,
+            shadowColor: 'rgba(0,0,0,0.6)'
+          },
+          { 
+            id: 'watermark', 
+            text: 'simp.ad', 
+            x: -cornerX + 30, 
+            y: cornerY + 20, 
+            width: 200, 
+            fontSize: 'sm', 
+            fontFamily: 'sans',
+            color: '#ffffff',
+            isGradient: false,
+            outline: false,
+            outlineColor: '#000000',
+            shadow: true,
+            shadowColor: 'rgba(0,0,0,0.6)'
+          }
         ],
         imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
         postBody: "Experience the ease of healthy choices with our intuitive wellness guide. 🌿 #healthylifestyle #wellness #simpleliving"
@@ -139,11 +181,14 @@ function App() {
     }
   }, []);
 
+  // Drag Logic
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
+    // Sync current editing text before starting drag to prevent data loss
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       const activeId = result?.boxes.find(b => b.text === (document.activeElement as HTMLElement).innerText)?.id;
       if (activeId) updateBoxText(activeId, (document.activeElement as HTMLElement).innerText || '');
     }
+
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveBoxId(id);
@@ -151,9 +196,11 @@ function App() {
   };
 
   const handleResizeStart = (id: string, clientX: number, clientY: number) => {
+    // Sync current editing text before starting resize
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       updateBoxText(id, (document.activeElement as HTMLElement).innerText || '');
     }
+
     const box = result?.boxes.find(b => b.id === id) || result?.imageBoxes.find(b => b.id === id);
     if (!box) return;
     setActiveResizeId(id);
@@ -162,29 +209,37 @@ function App() {
 
   const handleDragMove = (clientX: number, clientY: number) => {
     if (!result) return;
+    
     if (activeBoxId) {
       setResult({
         ...result,
-        boxes: result.boxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b),
-        imageBoxes: result.imageBoxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b)
+        boxes: result.boxes.map(b => 
+          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
+        ),
+        imageBoxes: result.imageBoxes.map(b => 
+          b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b
+        )
       });
-        } else if (activeResizeId) {
-          const deltaX = (clientX - resizeStart.x) * 2;
-          
-          setResult({
-            ...result,
-            boxes: result.boxes.map(b => 
-              b.id === activeResizeId ? { 
-                ...b, 
-                width: Math.max(50, resizeStart.width + deltaX)
-              } : b
-            ),
-            imageBoxes: result.imageBoxes.map(b => 
-              b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + deltaX) } : b
-            )
-          });
-        }
-    
+    } else if (activeResizeId) {
+      const deltaX = (clientX - resizeStart.x) * 2;
+      const deltaY = (clientY - resizeStart.y) * 2;
+      
+      // For images, use the delta that is moving more to make it feel natural
+      const imageDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+
+      setResult({
+        ...result,
+        boxes: result.boxes.map(b => 
+          b.id === activeResizeId ? { 
+            ...b, 
+            width: Math.max(50, resizeStart.width + deltaX)
+          } : b
+        ),
+        imageBoxes: result.imageBoxes.map(b => 
+          b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + imageDelta) } : b
+        )
+      });
+    }
   };
 
   const handleDragEnd = () => {
@@ -193,9 +248,20 @@ function App() {
   };
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => { if (activeBoxId || activeResizeId) { e.preventDefault(); handleDragMove(e.clientX, e.clientY); } };
-    const onTouchMove = (e: TouchEvent) => { if (activeBoxId || activeResizeId) { e.preventDefault(); handleDragMove(e.touches[0].clientX, e.touches[0].clientY); } };
+    const onMouseMove = (e: MouseEvent) => {
+      if (activeBoxId || activeResizeId) {
+        e.preventDefault();
+        handleDragMove(e.clientX, e.clientY);
+      }
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (activeBoxId || activeResizeId) {
+        e.preventDefault();
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
     const onUp = () => handleDragEnd();
+
     if (activeBoxId || activeResizeId) {
       window.addEventListener('mousemove', onMouseMove, { passive: false });
       window.addEventListener('mouseup', onUp);
@@ -246,22 +312,69 @@ function App() {
 
   const updateBoxText = (id: string, text: string) => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b)
+    });
   };
 
   const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b)
+    });
   };
 
   const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b)
+    });
+  };
+
+  const updateBoxColor = (id: string, color: string, isGradient: boolean = false) => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, color, isGradient } : b)
+    });
+  };
+
+  const updateBoxOutline = (id: string, outline: boolean, color: string = '#000000') => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, outline, outlineColor: color } : b)
+    });
+  };
+
+  const updateBoxShadow = (id: string, shadow: boolean, color: string = 'rgba(0,0,0,0.6)') => {
+    if (!result) return;
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { ...b, shadow, shadowColor: color } : b)
+    });
   };
 
   const addTextBox = () => {
     if (!result) return;
-    const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans' };
+    const newBox: TextBox = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: 'New Text',
+      x: 0,
+      y: 50,
+      width: 250,
+      fontSize: 'md',
+      fontFamily: 'sans',
+      color: '#ffffff',
+      isGradient: false,
+      outline: false,
+      outlineColor: '#000000',
+      shadow: true,
+      shadowColor: 'rgba(0,0,0,0.6)'
+    };
     setResult({ ...result, boxes: [...result.boxes, newBox] });
   };
 
@@ -271,7 +384,13 @@ function App() {
     const reader = new FileReader();
     reader.onload = (event) => {
       if (!event.target?.result) return;
-      const newImageBox: ImageBox = { id: Math.random().toString(36).substr(2, 9), src: event.target.result as string, x: 0, y: 0, width: 150 };
+      const newImageBox: ImageBox = {
+        id: Math.random().toString(36).substr(2, 9),
+        src: event.target.result as string,
+        x: 0,
+        y: 0,
+        width: 150
+      };
       setResult({ ...result, imageBoxes: [...result.imageBoxes, newImageBox] });
     };
     reader.readAsDataURL(file);
@@ -302,13 +421,20 @@ function App() {
   const handleDownloadPNG = async () => {
     if (!adContainerRef.current) return;
     try {
-      const canvas = await html2canvas(adContainerRef.current, { useCORS: true, scale: 2, backgroundColor: null });
+      const canvas = await html2canvas(adContainerRef.current, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: null
+      });
       const link = document.createElement('a');
       link.download = 'simp-ad.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
       setToast('Ad saved to downloads!');
-    } catch (err) { console.error(err); setToast('Failed to save image.'); }
+    } catch (err) {
+      console.error(err);
+      setToast('Failed to save image.');
+    }
   };
 
   const generateAd = async (promptOverride?: string) => {
@@ -318,6 +444,14 @@ function App() {
     setError('');
     setResult(null);
     setThumbnails([]);
+
+    // Parse URL params for styling
+    const searchParams = new URLSearchParams(window.location.search);
+    const textColor = searchParams.get('textColor') || '#ffffff';
+    const textGradient = searchParams.get('textGradient') === 'true';
+    const textOutline = searchParams.get('textOutline') === 'true';
+    const textShadow = searchParams.get('textShadow') !== 'false';
+
     try {
       const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
       const { searchTerm, adCopy, postBody: generatedPostBody } = aiRes.data;
@@ -332,8 +466,36 @@ function App() {
         setResult({
           image: images[0],
           boxes: [
-            { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans' },
-            { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans' }
+            { 
+              id: 'main', 
+              text: adCopy, 
+              x: 0, 
+              y: 0, 
+              width: 550, 
+              fontSize: 'md', 
+              fontFamily: 'sans',
+              color: textColor,
+              isGradient: textGradient,
+              outline: textOutline,
+              outlineColor: '#000000',
+              shadow: textShadow,
+              shadowColor: 'rgba(0,0,0,0.6)'
+            },
+            { 
+              id: 'watermark', 
+              text: 'simp.ad', 
+              x: -cornerX + 30, 
+              y: cornerY + 20, 
+              width: 200, 
+              fontSize: 'sm', 
+              fontFamily: 'sans',
+              color: '#ffffff',
+              isGradient: false,
+              outline: false,
+              outlineColor: '#000000',
+              shadow: true,
+              shadowColor: 'rgba(0,0,0,0.6)'
+            }
           ],
           imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
           postBody: generatedPostBody
@@ -347,13 +509,14 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <div className="header-left"></div>
-        <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
-                <div className="header-right">
-                  <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                  </button>
-                </div>
-        
+        <h1 className="logo-text">
+          simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" />
+        </h1>
+        <div className="header-right">
+          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
         <p className="subtitle">Instant AI Ads</p>
       </header>
 
@@ -384,7 +547,11 @@ function App() {
       <div className="container">
         <div className="input-group">
           <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
-          <button className="go-btn" onClick={() => generateAd()} disabled={loading}>{loading ? '...' : 'GO'}</button>
+          <button className="go-btn" onClick={() => generateAd()} disabled={loading}>
+            {loading ? (
+              <svg className="spinning" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            ) : 'GO'}
+          </button>
         </div>
 
         {error && <p className="error">{error}</p>}
@@ -393,233 +560,250 @@ function App() {
           <div className="ad-preview">
             <div className="style-controls">
               <div className="platform-dropdown" ref={platformRef}>
-                <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
-                  <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
+                <button 
+                  className="platform-trigger"
+                  onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}
+                >
+                  <div className="platform-btn active small-btn">
+                    {PLATFORM_ICONS[activePlatform]}
+                  </div>
                   <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
                 </button>
+
                 {isPlatformSelectorOpen && (
                   <div className="platform-icons popup">
                     <div className="platform-row">
                       {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
+                        <button 
+                          key={p} 
+                          className={`platform-btn ${activePlatform === p ? 'active' : ''}`} 
+                          onClick={() => { 
+                            setActivePlatform(p); 
+                            setFormat(PLATFORMS[p].ratios[0]); 
+                          }}
+                        >
+                          {PLATFORM_ICONS[p]}
+                        </button>
                       ))}
                     </div>
+                    
                     <div className="format-pills dropdown-pills">
                       {PLATFORMS[activePlatform].ratios.map(f => (
-                        <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>
+                        <button 
+                          key={f} 
+                          className={format === f ? 'active' : ''} 
+                          onClick={() => {
+                            setFormat(f);
+                            setIsPlatformSelectorOpen(false);
+                          }}
+                        >
+                          {f.toUpperCase()}
+                        </button>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
 
-                                          <div className="bg-selector-wrapper" ref={bgRef}>
-
-                                            <button 
-
-                                              className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
-
-                                              onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
-
-                                            >
-
-                                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-
-                                              <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
-
-                                            </button>
-
-                                            
-
-                                                            {isBgSelectorOpen && (
-
-                                            
-
-                                                              <div className="platform-icons popup bg-popup">
-
-                                            
-
-                                                                <div className="popup-search-bar">
-
-                                            
-
-                                                                  <input 
-
-                                            
-
-                                                                    type="text" 
-
-                                            
-
-                                                                    value={bgSearchQuery} 
-
-                                            
-
-                                                                    onChange={(e) => setBgSearchQuery(e.target.value)}
-
-                                            
-
-                                                                    placeholder="Search images.. ex: yoga, dogs"
-
-                                            
-
-                                                                    onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
-
-                                            
-
-                                                                  />
-
-                                            
-
-                                                                  <button className="popup-search-btn" onClick={handlePopupSearch}>
-
-                                            
-
-                                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-
-                                            
-
-                                                                  </button>
-
-                                            
-
-                                                                </div>
-
-                                            
-
-                                                                <div className="thumbnails-row">
-
-                                            
-
-                                                                  <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
-
-                                            
-
-                                                                  {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
-
-                                            
-
-                                                                  <button 
-
-                                            
-
-                                                                    className="refresh-thumbs-btn" 
-
-                                            
-
-                                                                    onClick={refreshThumbnails} 
-
-                                            
-
-                                                                    disabled={refreshingThumbs}
-
-                                            
-
-                                                                  >
-
-                                            
-
-                                                                    <svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-
-                                            
-
-                                                                  </button>
-
-                                            
-
-                                                                </div>
-
-                                            
-
-                                                              </div>
-
-                                            
-
-                                                            )}
-
-                                            
-
-                                            
-
-                                          </div>
-
-                            
-
-                                          <button className="add-text-btn" onClick={addTextBox}>
-
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-
-                                            <span>Text</span>
-
-                                          </button>
-
-                                          <label className="add-text-btn" style={{ cursor: 'pointer' }}>
-
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-
-                                            <span>Img</span>
-
-                                            <input 
-
-                                              type="file" 
-
-                                              hidden 
-
-                                              accept="image/*" 
-
-                                              onChange={addImageBox} 
-
-                                            />
-
-                                          </label>
-
-                                        </div>
-
-                            
-
-              
+              <div className="bg-selector-wrapper" ref={bgRef}>
+                <button 
+                  className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`}
+                  onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
+                </button>
+                
+                {isBgSelectorOpen && (
+                  <div className="platform-icons popup bg-popup">
+                    <div className="popup-search-bar">
+                      <input 
+                        type="text" 
+                        value={bgSearchQuery} 
+                        onChange={(e) => setBgSearchQuery(e.target.value)}
+                        placeholder="Search images.. ex: yoga, dogs"
+                        onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()}
+                      />
+                      <button className="popup-search-btn" onClick={handlePopupSearch}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      </button>
+                    </div>
+                    <div className="thumbnails-row">
+                      <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                      <button 
+                        className="refresh-thumbs-btn" 
+                        onClick={refreshThumbnails} 
+                        disabled={refreshingThumbs}
+                      >
+                        <svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="add-text-btn" onClick={addTextBox}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                <span>Text</span>
+              </button>
+              <label className="add-text-btn" style={{ cursor: 'pointer' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>Img</span>
+                <input 
+                  type="file" 
+                  hidden 
+                  accept="image/*" 
+                  onChange={addImageBox} 
+                />
+              </label>
+            </div>
 
             <div ref={adContainerRef} className={`ad-container ratio-${format}`}>
               <img src={result.image} alt="Ad background" />
               <div className="overlay">
                 {result.boxes.map((box) => (
-                  <div key={box.id} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
-                    <div contentEditable suppressContentEditableWarning className="editable-text" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }} onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} onFocus={() => setEditingBoxId(box.id)} onBlur={(e) => { updateBoxText(box.id, e.currentTarget.innerText); setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200); }}>
+                  <div 
+                    key={box.id}
+                    className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`}
+                    style={{ 
+                      transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
+                      width: box.width,
+                      zIndex: editingBoxId === box.id ? 100 : 1
+                    }}
+                  >
+                    <div 
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="editable-text"
+                      style={{ 
+                        cursor: activeBoxId === box.id ? 'grabbing' : 'grab',
+                        color: box.isGradient ? 'transparent' : box.color,
+                        backgroundImage: box.isGradient ? box.color : 'none',
+                        backgroundClip: box.isGradient ? 'text' : 'border-box',
+                        WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box',
+                        WebkitTextStroke: box.outline ? `1px ${box.outlineColor}` : '0',
+                        textShadow: box.shadow ? `0 4px 15px ${box.shadowColor}` : 'none'
+                      }}
+                      onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                      onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                      onFocus={() => setEditingBoxId(box.id)}
+                      onBlur={(e) => {
+                        updateBoxText(box.id, e.currentTarget.innerText);
+                        setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200);
+                      }}
+                    >
                       {box.text}
                     </div>
+                    
                     {editingBoxId === box.id && (
                       <div className="floating-controls" onMouseDown={e => e.stopPropagation()}>
-                        <div className="mini-pill-group">{['sm', 'md', 'lg'].map(sz => <button key={sz} className={box.fontSize === sz ? 'active' : ''} onClick={() => updateBoxFontSize(box.id, sz as any)}>{sz.toUpperCase()}</button>)}</div>
-                        <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
+                        <div className="mini-pill-group">
+                          {['sm', 'md', 'lg'].map(sz => (
+                            <button 
+                              key={sz} 
+                              className={box.fontSize === sz ? 'active' : ''} 
+                              onClick={() => updateBoxFontSize(box.id, sz as any)}
+                            >
+                              {sz.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mini-pill-group">
+                          {['sans', 'serif', 'display'].map(f => (
+                            <button 
+                              key={f} 
+                              className={box.fontFamily === f ? 'active' : ''} 
+                              onClick={() => updateBoxFontFamily(box.id, f as any)}
+                            >
+                              {f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mini-pill-group color-controls">
+                          <input type="color" value={box.isGradient ? '#ffffff' : box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, false)} title="Text Color" />
+                          <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, 'linear-gradient(45deg, #ff0080, #7928ca)', true)} title="Gradient">🌈</button>
+                          <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Outline">🔲</button>
+                          <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Shadow">🌑</button>
+                        </div>
                       </div>
                     )}
-                    <div className="resize-handle" onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
-                    {result.boxes.length > 1 && <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>}
-                  </div>
-                ))}
-                {result.imageBoxes.map((box) => (
-                  <div key={box.id} className="text-box-wrapper" style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: activeBoxId === box.id ? 100 : 1 }}>
-                    <img src={box.src} alt="Overlay" className="editable-image" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }} onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
-                    <div className="resize-handle" onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
-                    <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            {result.postBody && (
-              <div className="post-body-container">
-                <div className="post-body-header"><span className="control-label">Post Caption</span><button className="copy-btn" onClick={() => { navigator.clipboard.writeText(result.postBody || ''); setToast('Copied to clipboard!'); }}>Copy</button></div>
-                <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}>
-                  {result.postBody.split(' ').map((word, i) => word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' ')}
-                </p>
-              </div>
-            )}
-            <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
+                    <div 
+                      className="resize-handle"
+                      onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
+                      onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                    />
+                    {result.boxes.length > 1 && (
+                      <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
+                    )}
+                  </div>
+                ))}
+
+              {result.imageBoxes.map((box) => (
+                <div 
+                  key={box.id}
+                  className="text-box-wrapper"
+                  style={{ 
+                    transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`,
+                    width: box.width,
+                    zIndex: activeBoxId === box.id ? 100 : 1
+                  }}
+                >
+                  <img 
+                    src={box.src} 
+                    alt="Overlay" 
+                    className="editable-image"
+                    style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                  />
+                  <div 
+                    className="resize-handle"
+                    onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }}
+                    onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                  />
+                  <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
-      {toast && <div className="toast">{toast}</div>}
+
+          {(result.postBody || mode === 'BUILDER') && (
+            <div className="post-body-container">
+              <div className="post-body-header">
+                <span className="control-label">Post Caption</span>
+                <button 
+                  className="copy-btn" 
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.postBody || '');
+                    setToast('Copied to clipboard!');
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+              <p 
+                className="post-body-text" 
+                contentEditable 
+                suppressContentEditableWarning
+                onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}
+              >
+                {(result.postBody || "Write your caption here...").split(' ').map((word, i) => 
+                  word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' '
+                )}
+              </p>
+            </div>
+          )}
+
+          <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
+        </div>
+      )}
+      {toast && (
+        <div className="toast">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
