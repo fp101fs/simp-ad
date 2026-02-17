@@ -88,6 +88,7 @@ function App() {
   const adContainerRef = useRef<HTMLDivElement>(null);
   const platformRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
@@ -96,6 +97,10 @@ function App() {
     const handleClickOutside = (event: MouseEvent) => {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
       if (bgRef.current && !bgRef.current.contains(event.target as Node)) setIsBgSelectorOpen(false);
+      // Close editor only if clicking outside the text box AND outside the floating controls
+      if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
+        // We use a small delay or check related target to avoid closing when native picker opens
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -139,36 +144,8 @@ function App() {
       setResult({
         image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop',
         boxes: [
-          { 
-            id: 'main', 
-            text: 'Healthy living made simple.', 
-            x: 0, 
-            y: 0, 
-            width: 550, 
-            fontSize: 'md', 
-            fontFamily: 'sans',
-            color: '#ffffff',
-            isGradient: false,
-            outline: false,
-            outlineColor: '#000000',
-            shadow: true,
-            shadowColor: 'rgba(0,0,0,0.6)'
-          },
-          { 
-            id: 'watermark', 
-            text: 'simp.ad', 
-            x: -cornerX + 30, 
-            y: cornerY + 20, 
-            width: 200, 
-            fontSize: 'sm', 
-            fontFamily: 'sans',
-            color: '#ffffff',
-            isGradient: false,
-            outline: false,
-            outlineColor: '#000000',
-            shadow: true,
-            shadowColor: 'rgba(0,0,0,0.6)'
-          }
+          { id: 'main', text: 'Healthy living made simple.', x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' },
+          { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: 'rgba(0,0,0,0.6)' }
         ],
         imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
         postBody: "Experience the ease of healthy choices with our intuitive wellness guide. 🌿 #healthylifestyle #wellness #simpleliving"
@@ -435,7 +412,6 @@ function App() {
           <button className={mode === 'AUTO' ? 'active' : ''} onClick={() => setMode('AUTO')}>AUTO</button>
           <button className={mode === 'BUILDER' ? 'active' : ''} onClick={() => setMode('BUILDER')}>BUILDER</button>
         </div>
-
         <div className="input-group">
           <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
           <button className="go-btn" onClick={() => generateAd()} disabled={loading}>
@@ -496,16 +472,42 @@ function App() {
               <div className="overlay">
                 {result.boxes.map((box) => (
                   <div key={box.id} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
-                    <div contentEditable suppressContentEditableWarning className="editable-text" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab', color: box.isGradient ? 'transparent' : box.color, backgroundImage: box.isGradient ? box.color : 'none', backgroundClip: box.isGradient ? 'text' : 'border-box', WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box', WebkitTextStroke: box.outline ? `1px ${box.outlineColor}` : '0', textShadow: box.shadow ? `0 4px 15px ${box.shadowColor}` : 'none' }} onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} onFocus={() => setEditingBoxId(box.id)} onBlur={(e) => { updateBoxText(box.id, e.currentTarget.innerText); setTimeout(() => setEditingBoxId(prev => prev === box.id ? null : prev), 200); }}>
+                    <div 
+                      contentEditable 
+                      suppressContentEditableWarning 
+                      className="editable-text" 
+                      style={{ 
+                        cursor: activeBoxId === box.id ? 'grabbing' : 'grab', 
+                        color: box.isGradient ? 'transparent' : box.color, 
+                        backgroundImage: box.isGradient ? box.color : 'none', 
+                        backgroundClip: box.isGradient ? 'text' : 'border-box', 
+                        WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box', 
+                        WebkitTextStroke: box.outline ? `1px ${box.outlineColor}` : '0', 
+                        textShadow: box.shadow && !box.isGradient ? `0 4px 15px ${box.shadowColor}` : 'none',
+                        filter: box.shadow && box.isGradient ? `drop-shadow(0 4px 15px ${box.shadowColor})` : 'none'
+                      }} 
+                      onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} 
+                      onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} 
+                      onFocus={() => setEditingBoxId(box.id)} 
+                      onBlur={(e) => { 
+                        updateBoxText(box.id, e.currentTarget.innerText); 
+                        // Only close if we didn't just click on the floating controls
+                        setTimeout(() => {
+                          if (!editorRef.current?.contains(document.activeElement)) {
+                            setEditingBoxId(prev => prev === box.id ? null : prev);
+                          }
+                        }, 200);
+                      }}
+                    >
                       {box.text}
                     </div>
                     {editingBoxId === box.id && (
-                      <div className="floating-controls" onMouseDown={e => e.stopPropagation()}>
+                      <div className="floating-controls" ref={editorRef} onMouseDown={e => e.stopPropagation()}>
                         <div className="mini-pill-group">{['sm', 'md', 'lg'].map(sz => <button key={sz} className={box.fontSize === sz ? 'active' : ''} onClick={() => updateBoxFontSize(box.id, sz as any)}>{sz.toUpperCase()}</button>)}</div>
                         <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
                         <div className="mini-pill-group color-controls">
                           <input type="color" value={box.isGradient ? '#ffffff' : box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, false)} title="Text Color" />
-                          <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, 'linear-gradient(45deg, #ff0080, #7928ca)', true)} title="Gradient">🌈</button>
+                          <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.isGradient ? '#ffffff' : 'linear-gradient(45deg, #ff0080, #7928ca)', !box.isGradient)} title="Gradient">🌈</button>
                           <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Outline">🔲</button>
                           <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Shadow">🌑</button>
                         </div>
