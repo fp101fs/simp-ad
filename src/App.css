@@ -335,6 +335,31 @@ input:focus {
   animation: spin 1s linear infinite;
 }
 
+.mode-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.mode-toggle button {
+  padding: 8px 20px;
+  border-radius: 20px;
+  border: 1px solid #333;
+  background: #111;
+  color: #888;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-toggle button.active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
 .ad-preview {
   margin-top: 1rem;
   animation: fadeIn 0.4s ease-out;

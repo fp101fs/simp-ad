@@ -125,6 +125,9 @@ function App() {
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const urlPrompt = searchParams.get('prompt');
+    const urlMode = searchParams.get('mode');
+    if (urlMode === 'AUTO' || urlMode === 'BUILDER') setMode(urlMode);
+    
     if (urlPrompt) {
       setPrompt(urlPrompt);
       generateAd(urlPrompt);
@@ -428,6 +431,11 @@ function App() {
       )}
 
       <div className="container">
+        <div className="mode-toggle">
+          <button className={mode === 'AUTO' ? 'active' : ''} onClick={() => setMode('AUTO')}>AUTO</button>
+          <button className={mode === 'BUILDER' ? 'active' : ''} onClick={() => setMode('BUILDER')}>BUILDER</button>
+        </div>
+
         <div className="input-group">
           <input type="text" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="What are we selling today?" onKeyDown={(e) => e.key === 'Enter' && generateAd()} />
           <button className="go-btn" onClick={() => generateAd()} disabled={loading}>
