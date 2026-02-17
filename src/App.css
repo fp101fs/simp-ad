@@ -623,26 +623,56 @@ input:focus {
 .color-accent { color: #ff0080 !important; text-shadow: 0 4px 15px rgba(0,0,0,0.4); }
 
 .color-controls {
-  gap: 0;
+  gap: 8px;
+  padding: 8px 12px;
 }
 
-.mini-pill-group input[type="color"] {
-  width: 40px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  background: transparent;
+.color-btn-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.color-btn-wrapper button {
+  padding: 8px !important;
+  min-width: 40px !important;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.color-btn-wrapper input[type="color"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
   cursor: pointer;
-  border-radius: 8px;
 }
 
-.mini-pill-group input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
+.dual-picker {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+  background: rgba(255,255,255,0.1);
+  padding: 4px;
+  border-radius: 10px;
 }
 
-.mini-pill-group input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 8px;
+.dual-picker input[type="color"] {
+  position: static;
+  opacity: 1;
+  width: 24px;
+  height: 24px;
 }
 
 .add-text-btn {

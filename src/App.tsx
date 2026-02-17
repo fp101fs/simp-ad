@@ -33,6 +33,7 @@ interface TextBox {
   fontSize: 'sm' | 'md' | 'lg';
   fontFamily: 'sans' | 'serif' | 'display';
   color: string;
+  color2?: string;
   isGradient: boolean;
   outline: boolean;
   outlineColor: string;
@@ -264,19 +265,41 @@ function App() {
     setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
   };
 
-  const updateBoxColor = (id: string, color: string, isGradient: boolean = false) => {
+  const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, color, isGradient } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        color, 
+        color2: color2 || b.color2 || '#7928ca',
+        isGradient: isGradient !== undefined ? isGradient : b.isGradient 
+      } : b)
+    });
   };
 
-  const updateBoxOutline = (id: string, outline: boolean, color: string = '#000000') => {
+  const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, outline, outlineColor: color } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        outline, 
+        outlineColor: color || b.outlineColor || '#000000' 
+      } : b)
+    });
   };
 
-  const updateBoxShadow = (id: string, shadow: boolean, color: string = 'rgba(0,0,0,0.6)') => {
+  const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
     if (!result) return;
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, shadow, shadowColor: color } : b) });
+    setResult({
+      ...result,
+      boxes: result.boxes.map(b => b.id === id ? { 
+        ...b, 
+        shadow, 
+        shadowColor: color || b.shadowColor || 'rgba(0,0,0,0.6)' 
+      } : b)
+    });
   };
 
   const addTextBox = () => {
@@ -479,7 +502,7 @@ function App() {
                       style={{ 
                         cursor: activeBoxId === box.id ? 'grabbing' : 'grab', 
                         color: box.isGradient ? 'transparent' : box.color, 
-                        backgroundImage: box.isGradient ? box.color : 'none', 
+                        backgroundImage: box.isGradient ? `linear-gradient(45deg, ${box.color}, ${box.color2 || '#7928ca'})` : 'none', 
                         backgroundClip: box.isGradient ? 'text' : 'border-box', 
                         WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box', 
                         WebkitTextStroke: box.outline ? `1px ${box.outlineColor}` : '0', 
@@ -491,7 +514,6 @@ function App() {
                       onFocus={() => setEditingBoxId(box.id)} 
                       onBlur={(e) => { 
                         updateBoxText(box.id, e.currentTarget.innerText); 
-                        // Only close if we didn't just click on the floating controls
                         setTimeout(() => {
                           if (!editorRef.current?.contains(document.activeElement)) {
                             setEditingBoxId(prev => prev === box.id ? null : prev);
@@ -506,10 +528,32 @@ function App() {
                         <div className="mini-pill-group">{['sm', 'md', 'lg'].map(sz => <button key={sz} className={box.fontSize === sz ? 'active' : ''} onClick={() => updateBoxFontSize(box.id, sz as any)}>{sz.toUpperCase()}</button>)}</div>
                         <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
                         <div className="mini-pill-group color-controls">
-                          <input type="color" value={box.isGradient ? '#ffffff' : box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, false)} title="Text Color" />
-                          <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.isGradient ? '#ffffff' : 'linear-gradient(45deg, #ff0080, #7928ca)', !box.isGradient)} title="Gradient">🌈</button>
-                          <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Outline">🔲</button>
-                          <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Shadow">🌑</button>
+                          <div className="color-btn-wrapper">
+                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)}>
+                              <div className="color-swatch" style={{ background: box.color }} />
+                            </button>
+                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} />
+                          </div>
+
+                          <div className="color-btn-wrapper">
+                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, true)}>🌈</button>
+                            {box.isGradient && (
+                              <div className="dual-picker">
+                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Color 1" />
+                                <input type="color" value={box.color2 || '#7928ca'} onChange={(e) => updateBoxColor(box.id, box.color, e.target.value, true)} title="Color 2" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="color-btn-wrapper">
+                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)}>🔲</button>
+                            {box.outline && <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} />}
+                          </div>
+
+                          <div className="color-btn-wrapper">
+                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)}>🌑</button>
+                            {box.shadow && <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} />}
+                          </div>
                         </div>
                       </div>
                     )}
