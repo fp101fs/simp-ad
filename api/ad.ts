@@ -7,8 +7,6 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 // Prefer the non-VITE_ prefixed key (server-side secret); fall back to legacy VITE_ key
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 
-// The actual free model used when the user selects "openrouter/free"
-const OPENROUTER_FREE_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
 
 const buildPrompt = (prompt: string) =>
   `Analyze this business/idea prompt: "${prompt}".
@@ -42,8 +40,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const modelId = (requestedModel as string) || 'openrouter/free';
   const provider = (requestedProvider as string) || 'openrouter';
 
-  // Resolve the actual OpenRouter model ID ("openrouter/free" → real free model)
-  const openRouterModelId = modelId === 'openrouter/free' ? OPENROUTER_FREE_MODEL : modelId;
 
   try {
     let searchTerm = '';
@@ -61,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const response = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
         {
-          model: openRouterModelId,
+          model: modelId,
           messages: [{ role: 'user', content: buildPrompt(prompt) }],
         },
         {
