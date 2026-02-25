@@ -39,8 +39,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing or invalid "prompt" query parameter' });
   }
 
-  const modelId = (requestedModel as string) || 'google/gemini-2.5-flash-lite';
-  const provider = (requestedProvider as string) || 'google';
+  const modelId = (requestedModel as string) || 'openrouter/free';
+  const provider = (requestedProvider as string) || 'openrouter';
 
   // Resolve the actual OpenRouter model ID ("openrouter/free" → real free model)
   const openRouterModelId = modelId === 'openrouter/free' ? OPENROUTER_FREE_MODEL : modelId;
@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let postBody = '';
 
     if (provider === 'openrouter') {
-      // Explicit OpenRouter provider selected by user
+      // OpenRouter provider (default)
       if (!OPENROUTER_API_KEY) {
         return res.status(500).json({
           error: 'OpenRouter API key not configured. Add OPENROUTER_API_KEY to your Vercel environment variables.'
@@ -80,33 +80,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       adCopy = parsed.adCopy;
       postBody = parsed.postBody;
 
-    } else if (OPENROUTER_API_KEY) {
-      // Google provider but OpenRouter key available — use OpenRouter with the requested Gemini-style model
-      const response = await axios.post(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          model: modelId,
-          messages: [{ role: 'user', content: buildPrompt(prompt) }],
-          response_format: { type: 'json_object' }
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-            'HTTP-Referer': 'https://simp.ad',
-            'X-Title': 'simp.ad',
-          }
-        }
-      );
-
-      const aiResponse = response.data.choices[0].message.content;
-      const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      searchTerm = parsed.searchTerm;
-      adCopy = parsed.adCopy;
-      postBody = parsed.postBody;
-
-    } else if (GEMINI_API_KEY) {
-      // Fallback: direct Google Gemini SDK
+    } else if (provider === 'google') {
+      // Google Gemini SDK (direct — no OpenRouter proxy)
+      if (!GEMINI_API_KEY) {
+        return res.status(500).json({
+          error: 'Gemini API key not configured. Add VITE_GEMINI_API_KEY to your Vercel environment variables.'
+        });
+      }
       const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
       const googleModelId = modelId.includes('gemini-3-flash') ? 'gemini-2.0-flash'
                           : modelId.includes('2.0-flash') ? 'gemini-2.0-flash'
