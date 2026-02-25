@@ -241,6 +241,31 @@ function App() {
     };
   }, [activeBoxId, activeResizeId, dragStart, resizeStart]);
 
+  useEffect(() => {
+    if (!adContainerRef.current) return;
+    const rafId = requestAnimationFrame(() => {
+      if (!adContainerRef.current) return;
+      const { width, height } = adContainerRef.current.getBoundingClientRect();
+      setResult(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          boxes: prev.boxes.map(b =>
+            b.id === 'watermark'
+              ? { ...b, x: 125 - width / 2, y: height / 2 - 40 }
+              : b
+          ),
+          imageBoxes: prev.imageBoxes.map(b =>
+            b.id === 'logo'
+              ? { ...b, x: width / 2 - 55, y: -(height / 2 - 55) }
+              : b
+          ),
+        };
+      });
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [format]);
+
   const refreshThumbnails = async () => {
     if (!currentSearchTerm) return;
     setRefreshingThumbs(true);
@@ -638,7 +663,8 @@ function App() {
                         WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box',
                         WebkitTextStroke: box.outline ? `2px ${box.outlineColor}` : '0px transparent',
                         textShadow: box.shadow && !box.isGradient ? `0 4px 15px ${box.shadowColor}` : 'none',
-                        filter: box.shadow && box.isGradient ? `drop-shadow(0 4px 15px ${box.shadowColor})` : 'none'
+                        filter: box.shadow && box.isGradient ? `drop-shadow(0 4px 15px ${box.shadowColor})` : 'none',
+                        paintOrder: 'stroke fill'
                       }}
                       onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
                       onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
