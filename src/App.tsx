@@ -80,8 +80,8 @@ function App() {
   const [prompt, setPrompt] = useState('');
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
-  const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
-  const [aiProvider, setAiProvider] = useState<'google' | 'openrouter'>('google');
+  const [llmModel, setLlmModel] = useState('openrouter/free');
+  const [aiProvider, setAiProvider] = useState<'google' | 'openrouter'>('openrouter');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
@@ -522,8 +522,8 @@ function App() {
               <span className="control-label">AI Provider</span>
               <div className="vertical-pill-group">
                 {([
-                  { id: 'google', name: 'Google Gemini', desc: 'Fast, smart — uses your Gemini or OpenRouter key' },
-                  { id: 'openrouter', name: 'OpenRouter', desc: 'Free tier · Requires OPENROUTER_API_KEY in Vercel' }
+                  { id: 'openrouter', name: 'OpenRouter', desc: 'Default · Free tier via OPENROUTER_API_KEY' },
+                  { id: 'google', name: 'Google Gemini', desc: 'Alternative · Requires VITE_GEMINI_API_KEY' }
                 ] as const).map(p => (
                   <button key={p.id} className={aiProvider === p.id ? 'active' : ''} onClick={() => {
                     setAiProvider(p.id);
