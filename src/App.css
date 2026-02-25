@@ -109,6 +109,10 @@ body {
   font-weight: 800;
 }
 
+.control-group {
+  margin-bottom: 1.5rem;
+}
+
 .vertical-pill-group {
   display: flex;
   flex-direction: column;
@@ -146,6 +150,23 @@ body {
   background: #fff;
   color: #000;
   border-color: #fff;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  color: #000;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.primary-btn:hover {
+  opacity: 0.85;
 }
 
 .container {
@@ -383,33 +404,18 @@ input:focus {
   align-items: center;
 }
 
+/* Popups now open DOWN */
 .bg-popup, .platform-icons.popup {
   position: absolute;
-  bottom: 100%;
+  top: calc(100% + 15px);
   left: 50% !important;
   transform: translateX(-50%) !important;
-  margin-bottom: 15px !important;
   z-index: 500;
   box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-  animation: slideUpPopup 0.2s ease-out;
+  animation: slideDownPopup 0.2s ease-out;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  padding: 15px;
-  border-radius: 24px;
-  background: #111;
-  border: 1px solid #333;
-  box-sizing: border-box;
-}
-
-.platform-icons.popup {
-  width: 230px;
-}
-
-.bg-popup {
-  width: 300px;
-  max-width: 90vw;
-}
   padding: 15px;
   border-radius: 24px;
   background: #111;
@@ -426,8 +432,8 @@ input:focus {
   max-width: 360px;
 }
 
-@keyframes slideUpPopup {
-  from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+@keyframes slideDownPopup {
+  from { transform: translateX(-50%) translateY(-10px); opacity: 0; }
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
 
@@ -587,6 +593,76 @@ input:focus {
   text-decoration: underline;
 }
 
+/* Combined + button (Add Text / Add Image) */
+.add-menu-wrapper {
+  position: relative;
+}
+
+.add-menu-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5d020, #f0a500);
+  color: #000;
+  border: none;
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(240, 165, 0, 0.35);
+  padding: 0;
+}
+
+.add-menu-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(240, 165, 0, 0.55);
+}
+
+.add-menu-popup {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 6px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+  animation: slideDownPopup 0.15s ease-out;
+  min-width: 140px;
+}
+
+.add-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #ddd;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.add-menu-option:hover {
+  background: #222;
+  color: #fff;
+}
+
 .floating-controls {
   position: absolute;
   top: 100%;
@@ -594,14 +670,56 @@ input:focus {
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   background: #111;
-  padding: 15px;
+  padding: 12px;
   border-radius: 20px;
   border: 1px solid #333;
   margin-top: 20px;
   z-index: 100;
   box-shadow: 0 20px 45px rgba(0,0,0,0.7);
+}
+
+/* Cycle buttons for font size / font family */
+.cycle-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.cycle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px 16px;
+  min-width: 60px;
+  transition: all 0.2s;
+  gap: 2px;
+}
+
+.cycle-btn:hover {
+  background: #333;
+  border-color: #555;
+}
+
+.cycle-value {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+}
+
+.cycle-label {
+  font-size: 0.62rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
 }
 
 .mini-pill-group {
@@ -777,12 +895,13 @@ input:focus {
   user-select: none;
 }
 
+/* Resize handle — same size as delete button */
 .resize-handle {
   position: absolute;
   bottom: -8px;
   right: -8px;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: rgba(255, 255, 255, 0.9);
   border: 2px solid rgba(0, 0, 0, 0.4);
   border-radius: 50%;
@@ -845,9 +964,38 @@ input:focus {
   opacity: 0;
   transition: opacity 0.2s;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  z-index: 10;
+  padding: 0;
 }
 
 .text-box-wrapper:hover .delete-box {
+  opacity: 1;
+}
+
+/* Replace image button — bottom-left corner, blue, camera icon */
+.replace-image-btn {
+  position: absolute;
+  bottom: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background: #2979ff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  z-index: 10;
+  padding: 0;
+}
+
+.replace-image-btn.selected,
+.text-box-wrapper:hover .replace-image-btn {
   opacity: 1;
 }
 
@@ -918,6 +1066,16 @@ input:focus {
 }
 
 .error { color: #ff4444; margin: 1.5rem 0; font-weight: 700; }
+
+.control-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
 
 @media (min-width: 600px) {
   .input-group { flex-direction: row; }
