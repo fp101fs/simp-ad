@@ -81,23 +81,31 @@ function App() {
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
   const [llmModel, setLlmModel] = useState('google/gemini-2.5-flash-lite');
+  const [aiProvider, setAiProvider] = useState<'google' | 'openrouter'>('google');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const [bgSearchQuery, setBgSearchQuery] = useState('');
   const adContainerRef = useRef<HTMLDivElement>(null);
   const platformRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
+  const replaceFileInputRef = useRef<HTMLInputElement>(null);
+  const replaceTargetIdRef = useRef<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
+
+  const [selectedImageBoxId, setSelectedImageBoxId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
       if (bgRef.current && !bgRef.current.contains(event.target as Node)) setIsBgSelectorOpen(false);
-      
+      if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) setIsAddMenuOpen(false);
+
       // Close editor if clicking outside everything related to it
       if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
         const isClickingBox = result?.boxes.some(b => document.getElementById(`box-${b.id}`)?.contains(event.target as Node));
@@ -105,11 +113,15 @@ function App() {
           setEditingBoxId(null);
         }
       }
+
+      // Deselect image box if clicking outside image boxes
+      const isClickingImageBox = result?.imageBoxes.some(b => document.getElementById(`imgbox-${b.id}`)?.contains(event.target as Node));
+      if (!isClickingImageBox) setSelectedImageBoxId(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [result]);
-  
+
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
   const [searchPage, setSearchPage] = useState(1);
@@ -141,7 +153,7 @@ function App() {
       setActivePlatform(urlPlatform as keyof typeof PLATFORMS);
       setFormat(PLATFORMS[urlPlatform as keyof typeof PLATFORMS].ratios[0]);
     }
-    
+
     if (urlPrompt) {
       setPrompt(urlPrompt);
       generateAd(urlPrompt, urlBg || undefined);
@@ -184,19 +196,24 @@ function App() {
   };
 
   const handleDragMove = (clientX: number, clientY: number) => {
-    if (!result) return;
     if (activeBoxId) {
-      setResult({
-        ...result,
-        boxes: result.boxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b),
-        imageBoxes: result.imageBoxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b)
+      setResult(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          boxes: prev.boxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b),
+          imageBoxes: prev.imageBoxes.map(b => b.id === activeBoxId ? { ...b, x: clientX - dragStart.x, y: clientY - dragStart.y } : b)
+        };
       });
     } else if (activeResizeId) {
       const deltaX = (clientX - resizeStart.x) * 2;
-      setResult({
-        ...result,
-        boxes: result.boxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b),
-        imageBoxes: result.imageBoxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + deltaX) } : b)
+      setResult(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          boxes: prev.boxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(50, resizeStart.width + deltaX) } : b),
+          imageBoxes: prev.imageBoxes.map(b => b.id === activeResizeId ? { ...b, width: Math.max(20, resizeStart.width + deltaX) } : b)
+        };
       });
     }
   };
@@ -222,7 +239,7 @@ function App() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onUp);
     };
-  }, [activeBoxId, activeResizeId, dragStart, resizeStart, result]);
+  }, [activeBoxId, activeResizeId, dragStart, resizeStart]);
 
   const refreshThumbnails = async () => {
     if (!currentSearchTerm) return;
@@ -258,102 +275,133 @@ function App() {
     }
   };
 
+  // Use functional updates to avoid stale closure issues (fixes mobile outline bug)
   const updateBoxText = (id: string, text: string) => {
-    if (!result) return;
-    console.log('Text Update:', { id, text });
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, text } : b) });
+    setResult(prev => {
+      if (!prev) return null;
+      return { ...prev, boxes: prev.boxes.map(b => b.id === id ? { ...b, text } : b) };
+    });
   };
 
   const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
-    if (!result) return;
-    console.log('Font Size:', { id, fontSize });
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontSize } : b) });
+    setResult(prev => {
+      if (!prev) return null;
+      return { ...prev, boxes: prev.boxes.map(b => b.id === id ? { ...b, fontSize } : b) };
+    });
   };
 
   const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
-    if (!result) return;
-    console.log('Font Family:', { id, fontFamily });
-    setResult({ ...result, boxes: result.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) });
+    setResult(prev => {
+      if (!prev) return null;
+      return { ...prev, boxes: prev.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) };
+    });
   };
 
   const updateBoxColor = (id: string, color: string, color2?: string, isGradient?: boolean) => {
-    if (!result) return;
-    console.log('Color Update:', { id, color, color2, isGradient });
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        color, 
-        color2: color2 || b.color2 || '#7928ca',
-        isGradient: isGradient !== undefined ? isGradient : b.isGradient 
-      } : b)
+    setResult(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        boxes: prev.boxes.map(b => b.id === id ? {
+          ...b,
+          color,
+          color2: color2 || b.color2 || '#7928ca',
+          isGradient: isGradient !== undefined ? isGradient : b.isGradient
+        } : b)
+      };
     });
   };
 
   const updateBoxOutline = (id: string, outline: boolean, color?: string) => {
-    if (!result) return;
-    console.log('Outline Update:', { id, outline, color });
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        outline, 
-        outlineColor: color || b.outlineColor || '#000000' 
-      } : b)
+    setResult(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        boxes: prev.boxes.map(b => b.id === id ? {
+          ...b,
+          outline,
+          outlineColor: color || b.outlineColor || '#000000'
+        } : b)
+      };
     });
   };
 
   const updateBoxShadow = (id: string, shadow: boolean, color?: string) => {
-    if (!result) return;
-    console.log('Shadow Update:', { id, shadow, color });
-    setResult({
-      ...result,
-      boxes: result.boxes.map(b => b.id === id ? { 
-        ...b, 
-        shadow, 
-        shadowColor: color || b.shadowColor || '#000000' 
-      } : b)
+    setResult(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        boxes: prev.boxes.map(b => b.id === id ? {
+          ...b,
+          shadow,
+          shadowColor: color || b.shadowColor || '#000000'
+        } : b)
+      };
     });
   };
 
   const addTextBox = () => {
-    if (!result) return;
     const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' };
-    setResult({ ...result, boxes: [...result.boxes, newBox] });
+    setResult(prev => prev ? { ...prev, boxes: [...prev.boxes, newBox] } : null);
   };
 
   const addImageBox = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!result || !e.target.files?.[0]) return;
+    if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
       if (!event.target?.result) return;
       const newImageBox: ImageBox = { id: Math.random().toString(36).substr(2, 9), src: event.target.result as string, x: 0, y: 0, width: 150 };
-      setResult({ ...result, imageBoxes: [...result.imageBoxes, newImageBox] });
+      setResult(prev => prev ? { ...prev, imageBoxes: [...prev.imageBoxes, newImageBox] } : null);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
+  const triggerReplaceImage = (id: string) => {
+    replaceTargetIdRef.current = id;
+    replaceFileInputRef.current?.click();
+  };
+
+  const replaceImageBox = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0] || !replaceTargetIdRef.current) return;
+    const file = e.target.files[0];
+    const targetId = replaceTargetIdRef.current;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (!event.target?.result) return;
+      setResult(prev => prev ? {
+        ...prev,
+        imageBoxes: prev.imageBoxes.map(b => b.id === targetId ? { ...b, src: event.target!.result as string } : b)
+      } : null);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+    replaceTargetIdRef.current = null;
+  };
+
   const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!result || !e.target.files?.[0]) return;
+    if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
       if (!event.target?.result) return;
-      setResult({ ...result, image: event.target.result as string });
+      setResult(prev => prev ? { ...prev, image: event.target!.result as string } : null);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
   const removeBox = (id: string) => {
-    if (!result) return;
-    if (result.boxes.some(b => b.id === id) && result.boxes.length > 1) {
-      setResult({ ...result, boxes: result.boxes.filter(b => b.id !== id) });
-    } else if (result.imageBoxes.some(b => b.id === id)) {
-      setResult({ ...result, imageBoxes: result.imageBoxes.filter(b => b.id !== id) });
-    }
+    setResult(prev => {
+      if (!prev) return null;
+      if (prev.boxes.some(b => b.id === id) && prev.boxes.length > 1) {
+        return { ...prev, boxes: prev.boxes.filter(b => b.id !== id) };
+      } else if (prev.imageBoxes.some(b => b.id === id)) {
+        return { ...prev, imageBoxes: prev.imageBoxes.filter(b => b.id !== id) };
+      }
+      return prev;
+    });
   };
 
   const handleDownloadPNG = async () => {
@@ -373,7 +421,6 @@ function App() {
     url.searchParams.set('prompt', prompt);
     url.searchParams.set('platform', activePlatform);
     if (currentSearchTerm) url.searchParams.set('bg', currentSearchTerm);
-    
     navigator.clipboard.writeText(url.toString());
     setToast('Link copied to clipboard!');
   };
@@ -393,7 +440,7 @@ function App() {
     const textShadow = searchParams.get('textShadow') !== 'false';
 
     try {
-      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}`);
+      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`);
       const searchTerm = bgTerm || aiRes.data.searchTerm;
       const adCopy = aiRes.data.adCopy;
       const generatedPostBody = aiRes.data.postBody;
@@ -420,6 +467,11 @@ function App() {
     } catch (err: any) { console.error(err); setError('Failed to generate ad.'); } finally { setLoading(false); }
   };
 
+  const FONT_SIZE_LABELS: Record<string, string> = { sm: 'Sm', md: 'Md', lg: 'Lg' };
+  const FONT_FAMILY_LABELS: Record<string, string> = { sans: 'Sans', serif: 'Serif', display: 'Bold' };
+  const FONT_SIZES = ['sm', 'md', 'lg'] as const;
+  const FONT_FAMILIES = ['sans', 'serif', 'display'] as const;
+
   return (
     <div className="app-container">
       <header className="app-header">
@@ -429,7 +481,7 @@ function App() {
           <button className="settings-btn" onClick={handleShare} title="Share Setup">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
-          <button className="settings-btn" onClick={() => { console.log('Settings: OPEN'); setIsSettingsOpen(true); }}>
+          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
         </div>
@@ -437,25 +489,60 @@ function App() {
       </header>
 
       {isSettingsOpen && (
-        <div className="modal-overlay" onClick={() => { console.log('Settings: CLOSE'); setIsSettingsOpen(false); }}>
+        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Settings</h3>
+
             <div className="control-group">
-              <span className="control-label">AI Model</span>
+              <span className="control-label">AI Provider</span>
               <div className="vertical-pill-group">
-                {[
-                  { id: 'google/gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite (Default)' },
-                  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
-                  { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
-                ].map(m => (
-                  <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => { console.log('Model Switch:', m.id); setLlmModel(m.id); }}>
-                    <span className="model-name">{m.name}</span>
-                    <span className="model-id">{m.id}</span>
+                {([
+                  { id: 'google', name: 'Google Gemini', desc: 'Fast, smart — uses your Gemini or OpenRouter key' },
+                  { id: 'openrouter', name: 'OpenRouter', desc: 'Free tier · Requires OPENROUTER_API_KEY in Vercel' }
+                ] as const).map(p => (
+                  <button key={p.id} className={aiProvider === p.id ? 'active' : ''} onClick={() => {
+                    setAiProvider(p.id);
+                    if (p.id === 'openrouter') setLlmModel('openrouter/free');
+                    else setLlmModel('google/gemini-2.5-flash-lite');
+                  }}>
+                    <span className="model-name">{p.name}</span>
+                    <span className="model-id">{p.desc}</span>
                   </button>
                 ))}
               </div>
             </div>
-            <button className="primary-btn" onClick={() => { console.log('Settings: CLOSE'); setIsSettingsOpen(false); }}>Close</button>
+
+            {aiProvider === 'google' && (
+              <div className="control-group">
+                <span className="control-label">Gemini Model</span>
+                <div className="vertical-pill-group">
+                  {[
+                    { id: 'google/gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite (Default)' },
+                    { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
+                    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
+                  ].map(m => (
+                    <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
+                      <span className="model-name">{m.name}</span>
+                      <span className="model-id">{m.id}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {aiProvider === 'openrouter' && (
+              <div className="control-group">
+                <span className="control-label">OpenRouter Model</span>
+                <div className="vertical-pill-group">
+                  <button className="active">
+                    <span className="model-name">Free Model</span>
+                    <span className="model-id">Best available free model on OpenRouter</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button className="primary-btn" onClick={() => setIsSettingsOpen(false)}>Close</button>
           </div>
         </div>
       )}
@@ -474,7 +561,7 @@ function App() {
           <div className="ad-preview">
             <div className="style-controls">
               <div className="platform-dropdown" ref={platformRef}>
-                <button className="platform-trigger" onClick={() => { console.log('Platform Dropdown:', !isPlatformSelectorOpen ? 'OPEN' : 'CLOSE'); setIsPlatformSelectorOpen(!isPlatformSelectorOpen); }}>
+                <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
                   <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
                   <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
                 </button>
@@ -482,18 +569,18 @@ function App() {
                   <div className="platform-icons popup">
                     <div className="platform-row">
                       {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { console.log('Platform Selection:', p); setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
+                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
                       ))}
                     </div>
                     <div className="format-pills dropdown-pills">
-                      {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { console.log('Format Selection:', f); setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
+                      {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
                     </div>
                   </div>
                 )}
               </div>
 
               <div className="bg-selector-wrapper" ref={bgRef}>
-                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => { console.log('BG Selector:', !isBgSelectorOpen ? 'OPEN' : 'CLOSE'); setIsBgSelectorOpen(!isBgSelectorOpen); }}>
+                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
                 </button>
@@ -512,34 +599,52 @@ function App() {
                 )}
               </div>
 
-              <button className="add-text-btn" onClick={addTextBox}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg><span>Text</span></button>
-              <label className="add-text-btn" style={{ cursor: 'pointer' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Img</span><input type="file" hidden accept="image/*" onChange={addImageBox} /></label>
+              {/* Combined + button for Add Text / Add Image */}
+              <div className="add-menu-wrapper" ref={addMenuRef}>
+                <button className="add-menu-btn" onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} title="Add element">+</button>
+                {isAddMenuOpen && (
+                  <div className="add-menu-popup">
+                    <button className="add-menu-option" onClick={() => { addTextBox(); setIsAddMenuOpen(false); }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                      Add Text
+                    </button>
+                    <label className="add-menu-option" style={{ cursor: 'pointer' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      Add Image
+                      <input type="file" hidden accept="image/*" onChange={(e) => { addImageBox(e); setIsAddMenuOpen(false); }} />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Hidden file input for replacing images */}
+            <input ref={replaceFileInputRef} type="file" hidden accept="image/*" onChange={replaceImageBox} />
 
             <div ref={adContainerRef} className={`ad-container ratio-${format}`}>
               <img src={result.image} alt="Ad background" />
               <div className="overlay">
                 {result.boxes.map((box) => (
                   <div key={box.id} id={`box-${box.id}`} className={`text-box-wrapper font-${box.fontFamily} size-${box.fontSize}`} style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: editingBoxId === box.id ? 100 : 1 }}>
-                    <div 
-                      contentEditable 
-                      suppressContentEditableWarning 
-                      className="editable-text" 
-                      style={{ 
-                        cursor: activeBoxId === box.id ? 'grabbing' : 'grab', 
-                        color: box.isGradient ? 'transparent' : box.color, 
-                        backgroundImage: box.isGradient ? `linear-gradient(45deg, ${box.color}, ${box.color2 || '#7928ca'})` : 'none', 
-                        backgroundClip: box.isGradient ? 'text' : 'border-box', 
-                        WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box', 
-                        WebkitTextStroke: box.outline ? `1.5px ${box.outlineColor}` : '0', 
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      className="editable-text"
+                      style={{
+                        cursor: activeBoxId === box.id ? 'grabbing' : 'grab',
+                        color: box.isGradient ? 'transparent' : box.color,
+                        backgroundImage: box.isGradient ? `linear-gradient(45deg, ${box.color}, ${box.color2 || '#7928ca'})` : 'none',
+                        backgroundClip: box.isGradient ? 'text' : 'border-box',
+                        WebkitBackgroundClip: box.isGradient ? 'text' : 'border-box',
+                        WebkitTextStroke: box.outline ? `2px ${box.outlineColor}` : '0px transparent',
                         textShadow: box.shadow && !box.isGradient ? `0 4px 15px ${box.shadowColor}` : 'none',
                         filter: box.shadow && box.isGradient ? `drop-shadow(0 4px 15px ${box.shadowColor})` : 'none'
-                      }} 
-                      onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} 
-                      onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} 
-                      onFocus={() => { console.log('Editor: OPEN'); setEditingBoxId(box.id); }} 
-                      onBlur={(e) => { 
-                        updateBoxText(box.id, e.currentTarget.innerText); 
+                      }}
+                      onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                      onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                      onFocus={() => setEditingBoxId(box.id)}
+                      onBlur={(e) => {
+                        updateBoxText(box.id, e.currentTarget.innerText);
                         setTimeout(() => {
                           if (!editorRef.current?.contains(document.activeElement)) {
                             setEditingBoxId(prev => prev === box.id ? null : prev);
@@ -551,8 +656,25 @@ function App() {
                     </div>
                     {editingBoxId === box.id && (
                       <div className="floating-controls" ref={editorRef} onMouseDown={e => e.stopPropagation()}>
-                        <div className="mini-pill-group">{['sm', 'md', 'lg'].map(sz => <button key={sz} className={box.fontSize === sz ? 'active' : ''} onClick={() => updateBoxFontSize(box.id, sz as any)}>{sz.toUpperCase()}</button>)}</div>
-                        <div className="mini-pill-group">{['sans', 'serif', 'display'].map(f => <button key={f} className={box.fontFamily === f ? 'active' : ''} onClick={() => updateBoxFontFamily(box.id, f as any)}>{f === 'display' ? 'Bold' : f.charAt(0).toUpperCase() + f.slice(1)}</button>)}</div>
+                        {/* Cycle buttons for font size and font family */}
+                        <div className="cycle-controls">
+                          <button className="cycle-btn" onClick={() => {
+                            const idx = FONT_SIZES.indexOf(box.fontSize);
+                            updateBoxFontSize(box.id, FONT_SIZES[(idx + 1) % FONT_SIZES.length]);
+                          }}>
+                            <span className="cycle-value">{FONT_SIZE_LABELS[box.fontSize]}</span>
+                            <span className="cycle-label">Size</span>
+                          </button>
+                          <button className="cycle-btn" onClick={() => {
+                            const idx = FONT_FAMILIES.indexOf(box.fontFamily);
+                            updateBoxFontFamily(box.id, FONT_FAMILIES[(idx + 1) % FONT_FAMILIES.length]);
+                          }}>
+                            <span className="cycle-value">{FONT_FAMILY_LABELS[box.fontFamily]}</span>
+                            <span className="cycle-label">Font</span>
+                          </button>
+                        </div>
+
+                        {/* Color / outline / shadow controls — unchanged */}
                         <div className="mini-pill-group color-controls">
                           <div className="color-btn-wrapper">
                             <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Solid Color">
@@ -588,10 +710,30 @@ function App() {
                   </div>
                 ))}
                 {result.imageBoxes.map((box) => (
-                  <div key={box.id} className="text-box-wrapper" style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: activeBoxId === box.id ? 100 : 1 }}>
-                    <img src={box.src} alt="Overlay" className="editable-image" style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }} onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
+                  <div key={box.id} id={`imgbox-${box.id}`} className="text-box-wrapper" style={{ transform: `translate(calc(-50% + ${box.x}px), calc(-50% + ${box.y}px))`, width: box.width, zIndex: activeBoxId === box.id ? 100 : 1 }}>
+                    <img
+                      src={box.src}
+                      alt="Overlay"
+                      className="editable-image"
+                      style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
+                      onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
+                      onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
+                      onClick={() => setSelectedImageBoxId(prev => prev === box.id ? null : box.id)}
+                      onDoubleClick={() => triggerReplaceImage(box.id)}
+                    />
                     <div className="resize-handle" onMouseDown={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.clientX, e.clientY); }} onTouchStart={(e) => { e.stopPropagation(); handleResizeStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }} />
                     <button className="delete-box" onClick={() => removeBox(box.id)}>×</button>
+                    {/* Replace image button — bottom-left corner */}
+                    <button
+                      className={`replace-image-btn${selectedImageBoxId === box.id ? ' selected' : ''}`}
+                      onClick={() => triggerReplaceImage(box.id)}
+                      title="Replace image"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -600,7 +742,7 @@ function App() {
             {result.postBody && (
               <div className="post-body-container">
                 <div className="post-body-header"><span className="control-label">Post Caption</span><button className="copy-btn" onClick={() => { navigator.clipboard.writeText(result.postBody || ''); setToast('Copied to clipboard!'); }}>Copy</button></div>
-                <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult({ ...result, postBody: e.currentTarget.innerText })}>
+                <p className="post-body-text" contentEditable suppressContentEditableWarning onBlur={(e) => setResult(prev => prev ? { ...prev, postBody: e.currentTarget.innerText } : null)}>
                   {(result.postBody || "Write your caption here...").split(' ').map((word, i) => word.startsWith('#') ? <span key={i} className="hashtag" contentEditable={false}>{word} </span> : word + ' ')}
                 </p>
               </div>
