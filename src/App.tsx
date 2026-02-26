@@ -3,6 +3,13 @@ import axios from 'axios';
 import html2canvas from 'html2canvas';
 import './App.css';
 
+// Declare global gtag function for Google Analytics
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void;
+  }
+}
+
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
@@ -135,6 +142,16 @@ function App() {
 
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState('');
+
+  // Helper for Google Analytics events
+  const trackEvent = (action: string, category: string, label?: string) => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', action, {
+        event_category: category,
+        event_label: label,
+      });
+    }
+  };
 
   useEffect(() => {
     if (toast) {
@@ -432,6 +449,7 @@ function App() {
   const handleDownloadPNG = async () => {
     if (!adContainerRef.current) return;
     try {
+      trackEvent('download_image', 'Ad', 'PNG Download');
       const canvas = await html2canvas(adContainerRef.current, { useCORS: true, scale: 2, backgroundColor: null });
       const link = document.createElement('a');
       link.download = 'simp-ad.png';
@@ -442,6 +460,7 @@ function App() {
   };
 
   const handleShare = () => {
+    trackEvent('share_link', 'Engagement', 'Share Setup');
     const url = new URL(window.location.href);
     url.searchParams.set('prompt', prompt);
     url.searchParams.set('platform', activePlatform);
@@ -453,6 +472,7 @@ function App() {
   const generateAd = async (promptOverride?: string, bgTerm?: string) => {
     const query = promptOverride || prompt;
     if (!query) { setError('Please enter a prompt'); return; }
+    trackEvent('generate_ad_start', 'AI', 'Start Generation');
     setLoading(true);
     setError('');
     setResult(null);
@@ -469,6 +489,8 @@ function App() {
       const searchTerm = bgTerm || aiRes.data.searchTerm;
       const adCopy = aiRes.data.adCopy;
       const generatedPostBody = aiRes.data.postBody;
+
+      trackEvent('generate_ad_success', 'AI', 'Success');
 
       setCurrentSearchTerm(searchTerm);
       setSearchPage(1);
