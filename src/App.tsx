@@ -780,14 +780,25 @@ function App() {
           </div>
         )}
       </div>
-      <section className="seo-content" style={{ opacity: 0.6, fontSize: '0.8rem', textAlign: 'center', padding: '2rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h2>AI Ad Maker FREE Online</h2>
-        <p>
-          Need a professional ad instantly? Our <strong>AI Ad Maker</strong> helps you create high-converting advertisements for Instagram, Facebook, TikTok, and more. 
-          As the simplest <strong>AI Ad Maker FREE online</strong>, simp.ad generates stunning visuals, punchy headlines, and engaging captions in seconds. 
-          Perfect for small businesses, entrepreneurs, and creators looking for an effortless <strong>AI ad generator</strong>.
-        </p>
+      
+      <section className="features-section">
+        <h2>Why use simp.ad?</h2>
+        <div className="features-grid">
+          <div className="feature-card">
+            <h3>🚀 Instant AI Ad Maker</h3>
+            <p>Generate professional ad copy and visuals in seconds. Our <strong>AI Ad Maker</strong> does the heavy lifting so you can focus on your business.</p>
+          </div>
+          <div className="feature-card">
+            <h3>💸 100% Free Online</h3>
+            <p>No credit card required. simp.ad is a completely <strong>free AI ad generator</strong> that lets you create unlimited ads without watermarks.</p>
+          </div>
+          <div className="feature-card">
+            <h3>📱 Multi-Platform Ready</h3>
+            <p>Resize instantly for Instagram, Facebook, TikTok, and more. The perfect <strong>social media ad maker</strong> for modern creators.</p>
+          </div>
+        </div>
       </section>
+
       {toast && <div className="toast">{toast}</div>}
     </div>
   );

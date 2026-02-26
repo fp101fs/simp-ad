@@ -1079,24 +1079,58 @@ input:focus {
   border-width: 0;
 }
 
-.seo-content {
-  opacity: 0.6;
-  font-size: 0.8rem;
-  text-align: center;
+.features-section {
+  margin: 4rem auto 2rem;
   padding: 2rem 1rem;
-  max-width: 600px;
-  margin: 0 auto;
+  max-width: 800px;
+  text-align: center;
+  border-top: 1px solid #333;
+}
+
+.features-section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 2rem;
+  background: linear-gradient(to right, #fff, #888);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 3rem;
+  text-align: center;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 20px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  border-color: #555;
+}
+
+.feature-card h3 {
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+.feature-card p {
+  color: #aaa;
   line-height: 1.6;
+  font-size: 0.95rem;
 }
 
-.seo-content h2 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
+.feature-card strong {
   color: #fff;
-}
-
-.seo-content strong {
-  color: #fff;
+  font-weight: 600;
 }
 
 .control-label {
