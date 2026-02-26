@@ -1067,6 +1067,38 @@ input:focus {
 
 .error { color: #ff4444; margin: 1.5rem 0; font-weight: 700; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.seo-content {
+  opacity: 0.6;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.seo-content h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.seo-content strong {
+  color: #fff;
+}
+
 .control-label {
   display: block;
   font-size: 0.85rem;

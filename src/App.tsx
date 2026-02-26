@@ -501,7 +501,10 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <div className="header-left"></div>
-        <h1 className="logo-text">simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="ad" className="title-logo" /></h1>
+        <h1 className="logo-text">
+          <span className="sr-only">AI Ad Maker - </span>
+          simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="AI Ad Maker" className="title-logo" />
+        </h1>
         <div className="header-right">
           <button className="settings-btn" onClick={handleShare} title="Share Setup">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -777,6 +780,14 @@ function App() {
           </div>
         )}
       </div>
+      <section className="seo-content" style={{ opacity: 0.6, fontSize: '0.8rem', textAlign: 'center', padding: '2rem 1rem', maxWidth: '600px', margin: '0 auto' }}>
+        <h2>AI Ad Maker FREE Online</h2>
+        <p>
+          Need a professional ad instantly? Our <strong>AI Ad Maker</strong> helps you create high-converting advertisements for Instagram, Facebook, TikTok, and more. 
+          As the simplest <strong>AI Ad Maker FREE online</strong>, simp.ad generates stunning visuals, punchy headlines, and engaging captions in seconds. 
+          Perfect for small businesses, entrepreneurs, and creators looking for an effortless <strong>AI ad generator</strong>.
+        </p>
+      </section>
       {toast && <div className="toast">{toast}</div>}
     </div>
   );
