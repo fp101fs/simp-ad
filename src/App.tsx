@@ -712,14 +712,14 @@ function App() {
                           <button className="cycle-btn" onClick={() => {
                             const idx = FONT_SIZES.indexOf(box.fontSize);
                             updateBoxFontSize(box.id, FONT_SIZES[(idx + 1) % FONT_SIZES.length]);
-                          }}>
+                          }} title="Change Font Size">
                             <span className="cycle-value">{FONT_SIZE_LABELS[box.fontSize]}</span>
                             <span className="cycle-label">Size</span>
                           </button>
                           <button className="cycle-btn" onClick={() => {
                             const idx = FONT_FAMILIES.indexOf(box.fontFamily);
                             updateBoxFontFamily(box.id, FONT_FAMILIES[(idx + 1) % FONT_FAMILIES.length]);
-                          }}>
+                          }} title="Change Font Family">
                             <span className="cycle-value">{FONT_FAMILY_LABELS[box.fontFamily]}</span>
                             <span className="cycle-label">Font</span>
                           </button>
@@ -729,29 +729,37 @@ function App() {
                         <div className="mini-pill-group color-controls">
                           <div className="color-btn-wrapper">
                             <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Solid Color">
-                              <div className="color-swatch" style={{ background: box.color }} />
+                              <div className="color-swatch" style={{ background: box.color, borderColor: box.color === '#ffffff' ? '#000000' : 'rgba(255,255,255,0.2)' }} />
                             </button>
-                            <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} />
+                            <input type="color" value={box.color} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} title="Choose Solid Color" />
                           </div>
 
                           <div className="color-btn-wrapper">
                             <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, !box.isGradient)} title="Gradient">🌈</button>
                             {box.isGradient && (
                               <div className="dual-picker">
-                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Color 1" />
-                                <input type="color" value={box.color2 || '#7928ca'} onChange={(e) => updateBoxColor(box.id, box.color, e.target.value, true)} title="Color 2" />
+                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Gradient Start Color" />
+                                <input type="color" value={box.color2 || '#7928ca'} onChange={(e) => updateBoxColor(box.id, box.color, e.target.value, true)} title="Gradient End Color" />
                               </div>
                             )}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Outline">🔲</button>
-                            {box.outline && <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} />}
+                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Toggle Outline">🔲</button>
+                            {box.outline && (
+                              <div className="dual-picker">
+                                <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} title="Outline Color" />
+                              </div>
+                            )}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Shadow">🌑</button>
-                            {box.shadow && <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} />}
+                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Toggle Shadow">🌑</button>
+                            {box.shadow && (
+                              <div className="dual-picker">
+                                <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} title="Shadow Color" />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
