@@ -799,7 +799,7 @@ input:focus {
 
 .floating-picker {
   position: absolute;
-  bottom: calc(100% + 10px);
+  top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   background: #222;
@@ -811,18 +811,23 @@ input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.2s ease-out;
+  animation: fadeInCentered 0.2s ease-out;
 }
 
 .floating-picker::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border-width: 6px;
   border-style: solid;
-  border-color: #444 transparent transparent transparent;
+  border-color: transparent transparent #444 transparent;
+}
+
+@keyframes fadeInCentered {
+  from { opacity: 0; transform: translateX(-50%) scale(0.9); }
+  to { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
 .color-swatch-sm {
