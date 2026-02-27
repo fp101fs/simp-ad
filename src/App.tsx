@@ -731,7 +731,12 @@ function App() {
                             <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Solid Color">
                               <div className="color-swatch" style={{ background: box.color, borderColor: box.color === '#ffffff' ? '#000000' : 'rgba(255,255,255,0.2)' }} />
                             </button>
-                            <input type="color" value={box.color} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} title="Choose Solid Color" />
+                            {!box.isGradient && (
+                              <div className="floating-picker">
+                                <div className="color-swatch-sm" style={{ backgroundColor: box.color }} />
+                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} title="Choose Solid Color" />
+                              </div>
+                            )}
                           </div>
 
                           <div className="color-btn-wrapper">
@@ -775,7 +780,7 @@ function App() {
                     <img
                       src={box.src}
                       alt="Overlay"
-                      className="editable-image"
+                      className={`editable-image${selectedImageBoxId === box.id ? ' selected' : ''}`}
                       style={{ cursor: activeBoxId === box.id ? 'grabbing' : 'grab' }}
                       onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
                       onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}

@@ -986,6 +986,14 @@ input:focus {
   height: auto;
   display: block;
   pointer-events: auto;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.editable-image.selected {
+  border-color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.1);
 }
 
 .delete-box {
