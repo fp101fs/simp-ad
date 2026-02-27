@@ -789,6 +789,42 @@ input:focus {
   cursor: pointer;
 }
 
+.floating-picker {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 1px solid #444;
+  padding: 6px;
+  border-radius: 50%;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.floating-picker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #444 transparent transparent transparent;
+}
+
+.color-swatch-sm {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
 .dual-picker {
   display: flex;
   gap: 4px;

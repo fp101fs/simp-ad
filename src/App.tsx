@@ -747,7 +747,8 @@ function App() {
                           <div className="color-btn-wrapper">
                             <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Toggle Outline">🔲</button>
                             {box.outline && (
-                              <div className="dual-picker">
+                              <div className="floating-picker">
+                                <div className="color-swatch-sm" style={{ backgroundColor: box.outlineColor }} />
                                 <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} title="Outline Color" />
                               </div>
                             )}
@@ -756,7 +757,8 @@ function App() {
                           <div className="color-btn-wrapper">
                             <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Toggle Shadow">🌑</button>
                             {box.shadow && (
-                              <div className="dual-picker">
+                              <div className="floating-picker">
+                                <div className="color-swatch-sm" style={{ backgroundColor: box.shadowColor }} />
                                 <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} title="Shadow Color" />
                               </div>
                             )}
