@@ -706,7 +706,7 @@ function App() {
                       {box.text}
                     </div>
                     {editingBoxId === box.id && (
-                      <div className="floating-controls" ref={editorRef} onMouseDown={e => e.stopPropagation()}>
+                      <div className={`floating-controls ${box.y > 0 ? 'position-top' : ''}`} ref={editorRef} onMouseDown={e => e.stopPropagation()}>
                         {/* Cycle buttons for font size and font family */}
                         <div className="cycle-controls">
                           <button className="cycle-btn" onClick={() => {

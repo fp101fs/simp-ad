@@ -678,6 +678,14 @@ input:focus {
   margin-top: 20px;
   z-index: 100;
   box-shadow: 0 20px 45px rgba(0,0,0,0.7);
+  transition: top 0.2s, bottom 0.2s;
+}
+
+.floating-controls.position-top {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
 /* Cycle buttons for font size / font family */
