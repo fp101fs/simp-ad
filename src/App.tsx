@@ -500,6 +500,7 @@ function App() {
 
     try {
       const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`);
+      console.log(`✅ Ad generated using model: "${aiRes.data.modelUsed}"`);
       const searchTerm = bgTerm || aiRes.data.searchTerm;
       const adCopy = aiRes.data.adCopy;
       const generatedPostBody = aiRes.data.postBody;
@@ -525,7 +526,7 @@ function App() {
         });
         if (images.length > 1) setThumbnails(images.slice(1));
       } else { setError('No relevant images found.'); }
-    } catch (err: any) { console.error(err); setError('Failed to generate ad.'); } finally { setLoading(false); }
+    } catch (err: any) { console.error('💥 Failed to generate ad:', err?.response?.data?.details || err.message || err); setError('Failed to generate ad.'); } finally { setLoading(false); }
   };
 
   const FONT_SIZE_LABELS: Record<string, string> = { sm: 'Sm', md: 'Md', lg: 'Lg' };

@@ -65,6 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let searchTerm = '';
     let adCopy = '';
     let postBody = '';
+    let modelUsed = '';
 
     if (provider === 'openrouter') {
       // OpenRouter provider (default)
@@ -88,6 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           searchTerm = parsed.searchTerm;
           adCopy = parsed.adCopy;
           postBody = parsed.postBody;
+          modelUsed = actualModel;
           console.log(`✅ Ad generated using model: "${actualModel}"`);
           succeeded = true;
           break;
@@ -115,6 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         searchTerm = parsed.searchTerm;
         adCopy = parsed.adCopy;
         postBody = parsed.postBody;
+        modelUsed = actualModel;
         console.log(`✅ Ad generated using model: "${actualModel}"`);
       }
 
@@ -138,6 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       searchTerm = parsed.searchTerm;
       adCopy = parsed.adCopy;
       postBody = parsed.postBody;
+      modelUsed = googleModelId;
 
     } else {
       return res.status(500).json({ error: 'No AI API keys configured.' });
@@ -154,6 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       searchTerm,
       adCopy,
       postBody,
+      modelUsed,
       image: pexelsRes.data.photos?.[0]?.src?.large2x || '',
     });
 
