@@ -103,9 +103,23 @@ function App() {
   const replaceTargetIdRef = useRef<string | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Generating your ad...');
+  const loadingStartRef = useRef<number>(0);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
 
   const [selectedImageBoxId, setSelectedImageBoxId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!loading) return;
+    loadingStartRef.current = Date.now();
+    setLoadingMessage('Generating your ad...');
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - loadingStartRef.current) / 1000;
+      if (elapsed >= 10) setLoadingMessage('Almost there...');
+      else if (elapsed >= 5) setLoadingMessage('Hang in there...');
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -605,6 +619,7 @@ function App() {
           </button>
         </div>
 
+        {loading && <p className="loading-message">{loadingMessage}</p>}
         {error && <p className="error">{error}</p>}
 
         {result && (

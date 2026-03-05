@@ -1123,6 +1123,7 @@ input:focus {
 }
 
 .error { color: #ff4444; margin: 1.5rem 0; font-weight: 700; }
+.loading-message { color: #aaa; margin: 1rem 0; font-size: 0.9rem; text-align: center; }
 
 .sr-only {
   position: absolute;
