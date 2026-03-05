@@ -1134,6 +1134,22 @@ input:focus {
   transform: translateY(-2px);
 }
 
+.download-hint.downloading {
+  opacity: 0.7;
+  cursor: default;
+  transform: none;
+}
+
+.dl-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(0,0,0,0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
 .error { color: #ff4444; margin: 1.5rem 0; font-weight: 700; }
 .loading-message { color: #aaa; margin: 1rem 0; font-size: 0.9rem; text-align: center; }
 

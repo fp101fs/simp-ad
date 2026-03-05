@@ -109,6 +109,7 @@ function App() {
   const loadingStartRef = useRef<number>(0);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
   const [undoState, setUndoState] = useState<typeof result>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const [selectedImageBoxId, setSelectedImageBoxId] = useState<string | null>(null);
 
@@ -464,16 +465,22 @@ function App() {
   };
 
   const handleDownloadPNG = async () => {
-    if (!adContainerRef.current) return;
+    if (!adContainerRef.current || downloading) return;
+    setDownloading(true);
     try {
       trackEvent('download_image', 'Ad', 'PNG Download');
-      const canvas = await html2canvas(adContainerRef.current, { useCORS: true, scale: 2, backgroundColor: null });
+      const el = adContainerRef.current;
+      const prevRadius = el.style.borderRadius;
+      el.style.borderRadius = '0';
+      const canvas = await html2canvas(el, { useCORS: true, scale: 2, backgroundColor: null });
+      el.style.borderRadius = prevRadius;
       const link = document.createElement('a');
       link.download = 'simp-ad.png';
       link.href = canvas.toDataURL('image/png');
       link.click();
       setToast('Ad saved to downloads!');
     } catch (err) { console.error(err); setToast('Failed to save image.'); }
+    finally { setDownloading(false); }
   };
 
   const handleShare = () => {
@@ -839,7 +846,9 @@ function App() {
                 </p>
               </div>
             )}
-            <button className="download-hint" onClick={handleDownloadPNG}>Download PNG</button>
+            <button className={`download-hint${downloading ? ' downloading' : ''}`} onClick={handleDownloadPNG} disabled={downloading}>
+              {downloading ? <span className="dl-spinner" /> : 'Download PNG'}
+            </button>
           </div>
         )}
       </div>
