@@ -300,38 +300,21 @@ function App() {
   }, [format]);
 
   const refreshThumbnails = async () => {
-    if (!currentSearchTerm) return;
+    if (!bgSearchQuery) return;
     setRefreshingThumbs(true);
     try {
-      const nextPage = searchPage + 1;
-      console.log(`🔄 Refresh: "${currentSearchTerm}" page ${nextPage}`);
-      const images = await fetchImages(currentSearchTerm, nextPage, 3);
+      const isNewSearch = bgSearchQuery !== currentSearchTerm;
+      const nextPage = isNewSearch ? 1 : searchPage + 1;
+      console.log(`🔄 Refresh: "${bgSearchQuery}" page ${nextPage}`);
+      const images = await fetchImages(bgSearchQuery, nextPage, 3);
       console.log(`🖼️ Refresh returned ${images.length} image(s)`);
       if (images.length > 0) {
         setThumbnails(images);
+        setCurrentSearchTerm(bgSearchQuery);
         setSearchPage(nextPage);
       }
     } catch (err) {
       console.error("Failed to refresh thumbs", err);
-    } finally {
-      setRefreshingThumbs(false);
-    }
-  };
-
-  const handlePopupSearch = async () => {
-    if (!bgSearchQuery) return;
-    console.log(`🔍 Popup search: "${bgSearchQuery}"`);
-    setRefreshingThumbs(true);
-    try {
-      const images = await fetchImages(bgSearchQuery, 1, 3);
-      console.log(`🖼️ Popup search returned ${images.length} image(s)`);
-      if (images.length > 0) {
-        setThumbnails(images);
-        setCurrentSearchTerm(bgSearchQuery);
-        setSearchPage(1);
-      }
-    } catch (err) {
-      console.error("Popup search failed", err);
     } finally {
       setRefreshingThumbs(false);
     }
@@ -660,8 +643,7 @@ function App() {
                 {isBgSelectorOpen && (
                   <div className="platform-icons popup bg-popup">
                     <div className="popup-search-bar">
-                      <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search images.. ex: yoga, dogs" onKeyDown={(e) => e.key === 'Enter' && handlePopupSearch()} />
-                      <button className="popup-search-btn" onClick={handlePopupSearch}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+                      <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search images.. ex: yoga, dogs" onKeyDown={(e) => e.key === 'Enter' && refreshThumbnails()} />
                     </div>
                     <div className="thumbnails-row">
                       <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
