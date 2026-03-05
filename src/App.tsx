@@ -64,6 +64,7 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       if (unsplashRes.data.results && unsplashRes.data.results.length > 0) {
         images = unsplashRes.data.results.map((img: any) => img.urls.regular);
       }
+      console.log(`📷 Unsplash ["${query}"] page ${page}: ${images.length} result(s)`);
     } catch (err) {
       console.warn('Unsplash fetch failed, falling back to Pexels', err);
     }
@@ -76,6 +77,7 @@ const fetchImages = async (query: string, page: number, perPage: number): Promis
       if (pexelsRes.data.photos && pexelsRes.data.photos.length > 0) {
         images = pexelsRes.data.photos.map((p: any) => p.src.large2x);
       }
+      console.log(`📷 Pexels ["${query}"] page ${page}: ${images.length} result(s)`);
     } catch (err) {
       console.error('Pexels fetch failed', err);
     }
@@ -302,7 +304,9 @@ function App() {
     setRefreshingThumbs(true);
     try {
       const nextPage = searchPage + 1;
+      console.log(`🔄 Refresh: "${currentSearchTerm}" page ${nextPage}`);
       const images = await fetchImages(currentSearchTerm, nextPage, 3);
+      console.log(`🖼️ Refresh returned ${images.length} image(s)`);
       if (images.length > 0) {
         setThumbnails(images);
         setSearchPage(nextPage);
@@ -316,9 +320,11 @@ function App() {
 
   const handlePopupSearch = async () => {
     if (!bgSearchQuery) return;
+    console.log(`🔍 Popup search: "${bgSearchQuery}"`);
     setRefreshingThumbs(true);
     try {
       const images = await fetchImages(bgSearchQuery, 1, 3);
+      console.log(`🖼️ Popup search returned ${images.length} image(s)`);
       if (images.length > 0) {
         setThumbnails(images);
         setCurrentSearchTerm(bgSearchQuery);
