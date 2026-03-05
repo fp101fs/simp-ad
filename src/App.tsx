@@ -508,6 +508,7 @@ function App() {
       trackEvent('generate_ad_success', 'AI', 'Success');
 
       setCurrentSearchTerm(searchTerm);
+      setBgSearchQuery(searchTerm);
       setSearchPage(1);
       const images = await fetchImages(searchTerm, 1, 4);
       if (images.length > 0) {
