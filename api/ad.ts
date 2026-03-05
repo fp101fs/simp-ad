@@ -31,7 +31,7 @@ async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
 const buildPrompt = (prompt: string) =>
   `Analyze this business/idea prompt: "${prompt}".
 Generate a cohesive, professional, and family-friendly ad concept by providing:
-1. "searchTerm": A literal, descriptive image search term (e.g., "scoop of vanilla ice cream on a cone").
+1. "searchTerm": A short, generic 1-3 word stock photo search term — broad enough to return good results (e.g., "bananas", "yoga class", "coffee shop").
 2. "adCopy": A short, punchy ad headline (max 10 words).
 3. "postBody": An engaging social media caption (1-3 sentences) with relevant hashtags.
 Return a JSON object with these three fields.
