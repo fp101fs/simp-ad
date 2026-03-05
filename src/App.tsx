@@ -108,6 +108,7 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState('Generating your ad...');
   const loadingStartRef = useRef<number>(0);
   const [result, setResult] = useState<{ image: string; boxes: TextBox[]; imageBoxes: ImageBox[]; postBody: string } | null>(null);
+  const [undoState, setUndoState] = useState<typeof result>(null);
 
   const [selectedImageBoxId, setSelectedImageBoxId] = useState<string | null>(null);
 
@@ -207,7 +208,12 @@ function App() {
     }
   }, []);
 
+  const fmtTokens = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + 'K' : String(n);
+  const saveUndo = () => setUndoState(result);
+  const undoCanvasChange = () => { if (!undoState) return; setResult(undoState); setUndoState(null); };
+
   const handleDragStart = (id: string, clientX: number, clientY: number) => {
+    saveUndo();
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       const activeId = result?.boxes.find(b => b.text === (document.activeElement as HTMLElement).innerText)?.id;
       if (activeId) updateBoxText(activeId, (document.activeElement as HTMLElement).innerText || '');
@@ -219,6 +225,7 @@ function App() {
   };
 
   const handleResizeStart = (id: string, clientX: number, clientY: number) => {
+    saveUndo();
     if (document.activeElement instanceof HTMLElement && document.activeElement.contentEditable === 'true') {
       updateBoxText(id, (document.activeElement as HTMLElement).innerText || '');
     }
@@ -329,6 +336,7 @@ function App() {
   };
 
   const updateBoxFontSize = (id: string, fontSize: 'sm' | 'md' | 'lg') => {
+    saveUndo();
     setResult(prev => {
       if (!prev) return null;
       return { ...prev, boxes: prev.boxes.map(b => b.id === id ? { ...b, fontSize } : b) };
@@ -336,6 +344,7 @@ function App() {
   };
 
   const updateBoxFontFamily = (id: string, fontFamily: 'sans' | 'serif' | 'display') => {
+    saveUndo();
     setResult(prev => {
       if (!prev) return null;
       return { ...prev, boxes: prev.boxes.map(b => b.id === id ? { ...b, fontFamily } : b) };
@@ -386,12 +395,14 @@ function App() {
   };
 
   const addTextBox = () => {
+    saveUndo();
     const newBox: TextBox = { id: Math.random().toString(36).substr(2, 9), text: 'New Text', x: 0, y: 50, width: 250, fontSize: 'md', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' };
     setResult(prev => prev ? { ...prev, boxes: [...prev.boxes, newBox] } : null);
   };
 
   const addImageBox = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    saveUndo();
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -410,6 +421,7 @@ function App() {
 
   const replaceImageBox = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !replaceTargetIdRef.current) return;
+    saveUndo();
     const file = e.target.files[0];
     const targetId = replaceTargetIdRef.current;
     const reader = new FileReader();
@@ -427,6 +439,7 @@ function App() {
 
   const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
+    saveUndo();
     const file = e.target.files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -438,6 +451,7 @@ function App() {
   };
 
   const removeBox = (id: string) => {
+    saveUndo();
     setResult(prev => {
       if (!prev) return null;
       if (prev.boxes.some(b => b.id === id) && prev.boxes.length > 1) {
@@ -489,7 +503,10 @@ function App() {
 
     try {
       const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`);
-      console.log(`✅ Ad generated using model: "${aiRes.data.modelUsed}"`);
+      const elapsed = ((Date.now() - loadingStartRef.current) / 1000).toFixed(1);
+      const u = aiRes.data.tokenUsage;
+      const tokenStr = u ? ` | ~${fmtTokens(u.prompt_tokens + u.completion_tokens)} tokens` : '';
+      console.log(`✅ Ad generated using model: "${aiRes.data.modelUsed}" | ${elapsed}s${tokenStr}`);
       const searchTerm = bgTerm || aiRes.data.searchTerm;
       const adCopy = aiRes.data.adCopy;
       const generatedPostBody = aiRes.data.postBody;
@@ -647,7 +664,7 @@ function App() {
                     </div>
                     <div className="thumbnails-row">
                       <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
-                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { saveUndo(); setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
                       <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}><svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
                     </div>
                   </div>
@@ -671,6 +688,10 @@ function App() {
                   </div>
                 )}
               </div>
+
+              {undoState && (
+                <button className="undo-btn" onClick={undoCanvasChange} title="Undo last change">↩</button>
+              )}
             </div>
 
             {/* Hidden file input for replacing images */}
@@ -698,7 +719,7 @@ function App() {
                       }}
                       onMouseDown={(e) => { e.stopPropagation(); handleDragStart(box.id, e.clientX, e.clientY); }}
                       onTouchStart={(e) => { e.stopPropagation(); handleDragStart(box.id, e.touches[0].clientX, e.touches[0].clientY); }}
-                      onFocus={() => setEditingBoxId(box.id)}
+                      onFocus={() => { saveUndo(); setEditingBoxId(box.id); }}
                       onBlur={(e) => {
                         updateBoxText(box.id, e.currentTarget.innerText);
                         setTimeout(() => {
@@ -733,43 +754,43 @@ function App() {
                         {/* Color / outline / shadow controls — unchanged */}
                         <div className="mini-pill-group color-controls">
                           <div className="color-btn-wrapper">
-                            <button className={!box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, false)} title="Solid Color">
+                            <button className={!box.isGradient ? 'active' : ''} onClick={() => { saveUndo(); updateBoxColor(box.id, box.color, box.color2, false); }} title="Solid Color">
                               <div className="color-swatch" style={{ background: box.color, borderColor: box.color === '#ffffff' ? '#000000' : 'rgba(255,255,255,0.2)' }} />
                             </button>
                             {!box.isGradient && (
                               <div className="floating-picker">
                                 <div className="color-swatch-sm" style={{ backgroundColor: box.color }} />
-                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} title="Choose Solid Color" />
+                                <input type="color" value={box.color} onMouseDown={saveUndo} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, false)} title="Choose Solid Color" />
                               </div>
                             )}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.isGradient ? 'active' : ''} onClick={() => updateBoxColor(box.id, box.color, box.color2, !box.isGradient)} title="Gradient">🌈</button>
+                            <button className={box.isGradient ? 'active' : ''} onClick={() => { saveUndo(); updateBoxColor(box.id, box.color, box.color2, !box.isGradient); }} title="Gradient">🌈</button>
                             {box.isGradient && (
                               <div className="dual-picker">
-                                <input type="color" value={box.color} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Gradient Start Color" />
-                                <input type="color" value={box.color2 || '#7928ca'} onChange={(e) => updateBoxColor(box.id, box.color, e.target.value, true)} title="Gradient End Color" />
+                                <input type="color" value={box.color} onMouseDown={saveUndo} onChange={(e) => updateBoxColor(box.id, e.target.value, box.color2, true)} title="Gradient Start Color" />
+                                <input type="color" value={box.color2 || '#7928ca'} onMouseDown={saveUndo} onChange={(e) => updateBoxColor(box.id, box.color, e.target.value, true)} title="Gradient End Color" />
                               </div>
                             )}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.outline ? 'active' : ''} onClick={() => updateBoxOutline(box.id, !box.outline)} title="Toggle Outline">🔲</button>
+                            <button className={box.outline ? 'active' : ''} onClick={() => { saveUndo(); updateBoxOutline(box.id, !box.outline); }} title="Toggle Outline">🔲</button>
                             {box.outline && (
                               <div className="floating-picker">
                                 <div className="color-swatch-sm" style={{ backgroundColor: box.outlineColor }} />
-                                <input type="color" value={box.outlineColor} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} title="Outline Color" />
+                                <input type="color" value={box.outlineColor} onMouseDown={saveUndo} onChange={(e) => updateBoxOutline(box.id, true, e.target.value)} title="Outline Color" />
                               </div>
                             )}
                           </div>
 
                           <div className="color-btn-wrapper">
-                            <button className={box.shadow ? 'active' : ''} onClick={() => updateBoxShadow(box.id, !box.shadow)} title="Toggle Shadow">🌑</button>
+                            <button className={box.shadow ? 'active' : ''} onClick={() => { saveUndo(); updateBoxShadow(box.id, !box.shadow); }} title="Toggle Shadow">🌑</button>
                             {box.shadow && (
                               <div className="floating-picker">
                                 <div className="color-swatch-sm" style={{ backgroundColor: box.shadowColor }} />
-                                <input type="color" value={box.shadowColor} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} title="Shadow Color" />
+                                <input type="color" value={box.shadowColor} onMouseDown={saveUndo} onChange={(e) => updateBoxShadow(box.id, true, e.target.value)} title="Shadow Color" />
                               </div>
                             )}
                           </div>

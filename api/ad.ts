@@ -25,7 +25,7 @@ async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
   const actualModel = response.data.model || modelId;
   const aiResponse = response.data.choices[0].message.content;
   const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-  return { parsed: JSON.parse(cleanJson), actualModel };
+  return { parsed: JSON.parse(cleanJson), actualModel, usage: response.data.usage ?? null };
 }
 
 const buildPrompt = (prompt: string) =>
@@ -66,6 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let adCopy = '';
     let postBody = '';
     let modelUsed = '';
+    let tokenUsage: { prompt_tokens: number; completion_tokens: number } | null = null;
 
     if (provider === 'openrouter') {
       // OpenRouter provider (default)
@@ -85,11 +86,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
         console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${FREE_MODEL}"...`);
         try {
-          const { parsed, actualModel } = await callOpenRouter(FREE_MODEL, OPENROUTER_API_KEY, prompt);
+          const { parsed, actualModel, usage } = await callOpenRouter(FREE_MODEL, OPENROUTER_API_KEY, prompt);
           searchTerm = parsed.searchTerm;
           adCopy = parsed.adCopy;
           postBody = parsed.postBody;
           modelUsed = actualModel;
+          tokenUsage = usage;
           console.log(`✅ Ad generated using model: "${actualModel}"`);
           succeeded = true;
           break;
@@ -113,11 +115,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         console.log(`🔄 Switching to fallback model "${FALLBACK_MODEL}"...`);
         await sleep(RETRY_DELAY_MS);
-        const { parsed, actualModel } = await callOpenRouter(FALLBACK_MODEL, OPENROUTER_FALLBACK_API_KEY, prompt);
+        const { parsed, actualModel, usage } = await callOpenRouter(FALLBACK_MODEL, OPENROUTER_FALLBACK_API_KEY, prompt);
         searchTerm = parsed.searchTerm;
         adCopy = parsed.adCopy;
         postBody = parsed.postBody;
         modelUsed = actualModel;
+        tokenUsage = usage;
         console.log(`✅ Ad generated using model: "${actualModel}"`);
       }
 
@@ -159,6 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       adCopy,
       postBody,
       modelUsed,
+      tokenUsage,
       image: pexelsRes.data.photos?.[0]?.src?.large2x || '',
     });
 

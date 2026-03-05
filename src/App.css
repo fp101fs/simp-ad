@@ -622,6 +622,18 @@ input:focus {
   box-shadow: 0 6px 20px rgba(240, 165, 0, 0.55);
 }
 
+.undo-btn {
+  background: none;
+  border: 1px solid #555;
+  color: #aaa;
+  font-size: 1rem;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  line-height: 1;
+}
+.undo-btn:hover { border-color: #aaa; color: #fff; }
+
 .add-menu-popup {
   position: absolute;
   top: calc(100% + 10px);
