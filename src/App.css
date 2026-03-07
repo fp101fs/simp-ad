@@ -45,6 +45,12 @@ body {
   padding-top: 0;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+}
+
 .header-right {
   display: flex;
   justify-content: flex-end;
