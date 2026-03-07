@@ -120,12 +120,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const provider = (requestedProvider as string) || 'openrouter';
 
 
+  const FREE_MODELS = [
+    'stepfun/step-3.5-flash:free',
+    'arcee-ai/trinity-large-preview:free',
+    'z-ai/glm-4.5-air:free',
+    'nvidia/nemotron-3-nano-30b-a3b:free',
+    'arcee-ai/trinity-mini:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'qwen/qwen3-next-80b-a3b-instruct:free',
+    'liquid/lfm-2.5-1.2b-thinking:free',
+    'mistralai/mistral-small-3.1-24b-instruct:free',
+    'qwen/qwen3-4b:free',
+  ];
+
   try {
     let searchTerm = '';
     let adCopy = '';
     let postBody = '';
     let modelUsed = '';
     let tokenUsage: { prompt_tokens: number; completion_tokens: number } | null = null;
+    let modelIndex = 0;
 
     if (provider === 'openrouter') {
       // OpenRouter provider (default)
@@ -135,19 +149,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const FREE_MODELS = [
-        'stepfun/step-3.5-flash:free',
-        'arcee-ai/trinity-large-preview:free',
-        'z-ai/glm-4.5-air:free',
-        'nvidia/nemotron-3-nano-30b-a3b:free',
-        'arcee-ai/trinity-mini:free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'qwen/qwen3-next-80b-a3b-instruct:free',
-        'liquid/lfm-2.5-1.2b-thinking:free',
-        'mistralai/mistral-small-3.1-24b-instruct:free',
-        'qwen/qwen3-4b:free',
-      ];
-      const shuffledModels = [...FREE_MODELS].sort(() => Math.random() - 0.5);
+      const redis = await getRedis();
+      modelIndex = parseInt(await redis.get('model:index') ?? '0', 10) || 0;
       const MAX_FREE_ATTEMPTS = 3;
       const RETRY_DELAY_MS = 3000;
       let lastError: any;
@@ -155,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Attempts 1–3: free model with primary key
       for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
-        const freeModel = shuffledModels[attempt - 1];
+        const freeModel = FREE_MODELS[(modelIndex + attempt - 1) % FREE_MODELS.length];
         console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${freeModel}"...`);
         try {
           const { parsed, actualModel, usage } = await callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt);
@@ -234,6 +237,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const r = await getRedis();
       await r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
       await r.lTrim('ads:recent', 0, 99);
+      await r.set('model:index', String((modelIndex + 1) % FREE_MODELS.length));
     } catch (kvErr: any) { console.error('Redis log failed:', kvErr.message); }
 
     if (rateCheck.key) {
