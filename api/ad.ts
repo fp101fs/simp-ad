@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
 
 const PEXELS_API_KEY = process.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
@@ -156,6 +157,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { headers: { Authorization: PEXELS_API_KEY || '' } }
     );
 
+    const imageUrl = pexelsRes.data.photos?.[0]?.src?.large2x || '';
+
+    try {
+      await kv.lpush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
+      await kv.ltrim('ads:recent', 0, 99);
+    } catch (kvErr: any) { console.error('KV log failed:', kvErr.message); }
+
     return res.status(200).json({
       prompt,
       searchTerm,
@@ -163,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       postBody,
       modelUsed,
       tokenUsage,
-      image: pexelsRes.data.photos?.[0]?.src?.large2x || '',
+      image: imageUrl,
     });
 
   } catch (error: any) {

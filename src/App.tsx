@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
+import { useGoogleLogin, googleLogout } from '@react-oauth/google';
 import './App.css';
 
 // Declare global gtag function for Google Analytics
@@ -111,7 +112,33 @@ function App() {
   const [undoState, setUndoState] = useState<typeof result>(null);
   const [downloading, setDownloading] = useState(false);
 
+  const [googleUser, setGoogleUser] = useState<{ accessToken: string; email: string; name: string; picture: string } | null>(null);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [adminAds, setAdminAds] = useState<any[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const isAdmin = googleUser?.email === import.meta.env.VITE_ADMIN_EMAIL;
+
   const [selectedImageBoxId, setSelectedImageBoxId] = useState<string | null>(null);
+
+  const googleLogin = useGoogleLogin({
+    flow: 'implicit',
+    onSuccess: async (tokenResponse) => {
+      const info = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      });
+      setGoogleUser({ accessToken: tokenResponse.access_token, email: info.data.email, name: info.data.name, picture: info.data.picture });
+    },
+  });
+
+  const fetchAdminAds = async () => {
+    if (!googleUser) return;
+    setAdminLoading(true);
+    try {
+      const res = await axios.get('/api/admin-ads', { headers: { Authorization: `Bearer ${googleUser.accessToken}` } });
+      setAdminAds(res.data.ads.map((s: string) => JSON.parse(s)));
+    } catch (err) { console.error(err); }
+    finally { setAdminLoading(false); }
+  };
 
   useEffect(() => {
     if (!loading) return;
@@ -557,6 +584,21 @@ function App() {
           simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="AI Ad Maker" className="title-logo" />
         </h1>
         <div className="header-right">
+          <div className="auth-area">
+            {googleUser ? (
+              <div className="user-pill">
+                <img src={googleUser.picture} alt={googleUser.name} className="user-avatar" />
+                <span className="user-name">{googleUser.name.split(' ')[0]}</span>
+                {isAdmin && <button className="admin-btn" onClick={() => { setIsAdminOpen(true); fetchAdminAds(); }}>Admin</button>}
+                <button className="signout-btn" onClick={() => { googleLogout(); setGoogleUser(null); }}>Sign out</button>
+              </div>
+            ) : (
+              <button className="google-signin-btn" onClick={() => googleLogin()}>
+                <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+                Sign in
+              </button>
+            )}
+          </div>
           <button className="settings-btn" onClick={handleShare} title="Share Setup">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
@@ -870,6 +912,36 @@ function App() {
           </div>
         </div>
       </section>
+
+      {isAdminOpen && (
+        <div className="admin-overlay" onClick={() => setIsAdminOpen(false)}>
+          <div className="admin-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-panel-header">
+              <h2>Recent Ads</h2>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={fetchAdminAds} className="admin-action-btn">Refresh</button>
+                <button onClick={() => { googleLogout(); setGoogleUser(null); setIsAdminOpen(false); }} className="admin-action-btn">Sign out</button>
+                <button onClick={() => setIsAdminOpen(false)} className="admin-action-btn">✕</button>
+              </div>
+            </div>
+            {adminLoading ? <p style={{ padding: 20, color: '#888' }}>Loading...</p> : (
+              <div className="admin-ads-list">
+                {adminAds.map((ad, i) => (
+                  <div key={i} className="admin-ad-row">
+                    {ad.image && <img src={ad.image} alt="" className="admin-ad-thumb" />}
+                    <div className="admin-ad-info">
+                      <span className="admin-ad-time">{new Date(ad.ts).toLocaleString()}</span>
+                      <strong>{ad.adCopy}</strong>
+                      <span className="admin-ad-prompt">"{ad.prompt}"</span>
+                      <span className="admin-ad-model">{ad.modelUsed}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </div>
