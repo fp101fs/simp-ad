@@ -141,8 +141,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'z-ai/glm-4.5-air:free',
         'nvidia/nemotron-3-nano-30b-a3b:free',
         'arcee-ai/trinity-mini:free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+        'liquid/lfm-2.5-1.2b-thinking:free',
+        'mistralai/mistral-small-3.1-24b-instruct:free',
+        'qwen/qwen3-4b:free',
       ];
-      const pickFreeModel = () => FREE_MODELS[Math.floor(Math.random() * FREE_MODELS.length)];
+      const shuffledModels = [...FREE_MODELS].sort(() => Math.random() - 0.5);
       const MAX_FREE_ATTEMPTS = 3;
       const RETRY_DELAY_MS = 3000;
       let lastError: any;
@@ -150,7 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Attempts 1–3: free model with primary key
       for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
-        const freeModel = pickFreeModel();
+        const freeModel = shuffledModels[attempt - 1];
         console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${freeModel}"...`);
         try {
           const { parsed, actualModel, usage } = await callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt);
