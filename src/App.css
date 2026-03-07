@@ -391,12 +391,18 @@ input:focus {
 }
 
 .style-controls {
+  position: relative;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
   margin-bottom: 25px;
-  flex-wrap: nowrap;
+}
+
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .bg-selector-wrapper {
@@ -629,6 +635,8 @@ input:focus {
 }
 
 .undo-btn {
+  position: absolute;
+  left: 0;
   background: none;
   border: 1px solid #555;
   color: #aaa;
@@ -1173,6 +1181,11 @@ input:focus {
   padding: 4px 10px;
   font-size: 0.8rem;
   vertical-align: middle;
+}
+
+@media (max-width: 480px) {
+  .google-signin-btn .signin-label { display: none; }
+  .google-signin-btn { padding: 7px 10px; }
 }
 
 .user-pill {

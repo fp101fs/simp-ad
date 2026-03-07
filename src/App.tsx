@@ -191,6 +191,24 @@ function App() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
+    const adId = searchParams.get('ad');
+
+    if (adId) {
+      fetch(`/api/share?id=${encodeURIComponent(adId)}`)
+        .then(r => r.json())
+        .then(({ state, platform }) => {
+          if (state) {
+            setResult(state);
+            if (platform && PLATFORMS[platform as keyof typeof PLATFORMS]) {
+              setActivePlatform(platform as keyof typeof PLATFORMS);
+              setFormat(PLATFORMS[platform as keyof typeof PLATFORMS].ratios[0]);
+            }
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
     const urlPrompt = searchParams.get('prompt');
     const urlPlatform = searchParams.get('platform');
     const urlBg = searchParams.get('bg');
@@ -494,14 +512,22 @@ function App() {
     finally { setDownloading(false); }
   };
 
-  const handleShare = () => {
-    trackEvent('share_link', 'Engagement', 'Share Setup');
-    const url = new URL(window.location.href);
-    url.searchParams.set('prompt', prompt);
-    url.searchParams.set('platform', activePlatform);
-    if (currentSearchTerm) url.searchParams.set('bg', currentSearchTerm);
-    navigator.clipboard.writeText(url.toString());
-    setToast('Link copied to clipboard!');
+  const handleShare = async () => {
+    if (!result) return;
+    trackEvent('share_link', 'Engagement', 'Share Ad');
+    try {
+      const resp = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: result, platform: activePlatform }),
+      });
+      const { id } = await resp.json();
+      const url = `https://simp.ad/?ad=${id}`;
+      navigator.clipboard.writeText(url);
+      setToast('Link copied to clipboard!');
+    } catch {
+      setToast('Failed to create share link');
+    }
   };
 
   const generateAd = async (promptOverride?: string, bgTerm?: string) => {
@@ -585,7 +611,7 @@ function App() {
             ) : (
               <button className="google-signin-btn" onClick={() => googleLogin()}>
                 <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
-                Sign in
+                <span className="signin-label">Sign in</span>
               </button>
             )}
           </div>
@@ -687,65 +713,66 @@ function App() {
         {result && (
           <div className="ad-preview">
             <div className="style-controls">
-              <div className="platform-dropdown" ref={platformRef}>
-                <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
-                  <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
-                  <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
-                </button>
-                {isPlatformSelectorOpen && (
-                  <div className="platform-icons popup">
-                    <div className="platform-row">
-                      {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
-                        <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
-                      ))}
-                    </div>
-                    <div className="format-pills dropdown-pills">
-                      {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-selector-wrapper" ref={bgRef}>
-                <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
-                </button>
-                {isBgSelectorOpen && (
-                  <div className="platform-icons popup bg-popup">
-                    <div className="popup-search-bar">
-                      <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search images.. ex: yoga, dogs" onKeyDown={(e) => e.key === 'Enter' && refreshThumbnails()} />
-                    </div>
-                    <div className="thumbnails-row">
-                      <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
-                      {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { saveUndo(); setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
-                      <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}><svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Combined + button for Add Text / Add Image */}
-              <div className="add-menu-wrapper" ref={addMenuRef}>
-                <button className="add-menu-btn" onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} title="Add element">+</button>
-                {isAddMenuOpen && (
-                  <div className="add-menu-popup">
-                    <button className="add-menu-option" onClick={() => { addTextBox(); setIsAddMenuOpen(false); }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-                      Add Text
-                    </button>
-                    <label className="add-menu-option" style={{ cursor: 'pointer' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                      Add Image
-                      <input type="file" hidden accept="image/*" onChange={(e) => { addImageBox(e); setIsAddMenuOpen(false); }} />
-                    </label>
-                  </div>
-                )}
-              </div>
-
               {undoState && (
                 <button className="undo-btn" onClick={undoCanvasChange} title="Undo last change">↩</button>
               )}
+              <div className="controls-right">
+                <div className="platform-dropdown" ref={platformRef}>
+                  <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
+                    <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
+                    <span className={`dropdown-arrow ${isPlatformSelectorOpen ? 'open' : ''}`}>▼</span>
+                  </button>
+                  {isPlatformSelectorOpen && (
+                    <div className="platform-icons popup">
+                      <div className="platform-row">
+                        {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map(p => (
+                          <button key={p} className={`platform-btn ${activePlatform === p ? 'active' : ''}`} onClick={() => { setActivePlatform(p); setFormat(PLATFORMS[p].ratios[0]); }}>{PLATFORM_ICONS[p]}</button>
+                        ))}
+                      </div>
+                      <div className="format-pills dropdown-pills">
+                        {PLATFORMS[activePlatform].ratios.map(f => <button key={f} className={format === f ? 'active' : ''} onClick={() => { setFormat(f); setIsPlatformSelectorOpen(false); }}>{f.toUpperCase()}</button>)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-selector-wrapper" ref={bgRef}>
+                  <button className={`add-text-btn ${isBgSelectorOpen ? 'active' : ''}`} onClick={() => setIsBgSelectorOpen(!isBgSelectorOpen)}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <span>BG</span> {isBgSelectorOpen ? '▲' : '▼'}
+                  </button>
+                  {isBgSelectorOpen && (
+                    <div className="platform-icons popup bg-popup">
+                      <div className="popup-search-bar">
+                        <input type="text" value={bgSearchQuery} onChange={(e) => setBgSearchQuery(e.target.value)} placeholder="Search images.. ex: yoga, dogs" onKeyDown={(e) => e.key === 'Enter' && refreshThumbnails()} />
+                      </div>
+                      <div className="thumbnails-row">
+                        <label className="upload-thumb"><input type="file" hidden accept="image/*" onChange={handleMainImageUpload} /><span>+</span></label>
+                        {thumbnails.map((thumb, idx) => <img key={idx} src={thumb} alt="Option" className="thumbnail" onClick={() => { saveUndo(); setResult(prev => prev ? { ...prev, image: thumb } : null); setIsBgSelectorOpen(false); }} />)}
+                        <button className="refresh-thumbs-btn" onClick={refreshThumbnails} disabled={refreshingThumbs}><svg className={refreshingThumbs ? 'spinning' : ''} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Combined + button for Add Text / Add Image */}
+                <div className="add-menu-wrapper" ref={addMenuRef}>
+                  <button className="add-menu-btn" onClick={() => setIsAddMenuOpen(!isAddMenuOpen)} title="Add element">+</button>
+                  {isAddMenuOpen && (
+                    <div className="add-menu-popup">
+                      <button className="add-menu-option" onClick={() => { addTextBox(); setIsAddMenuOpen(false); }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                        Add Text
+                      </button>
+                      <label className="add-menu-option" style={{ cursor: 'pointer' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Add Image
+                        <input type="file" hidden accept="image/*" onChange={(e) => { addImageBox(e); setIsAddMenuOpen(false); }} />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Hidden file input for replacing images */}
