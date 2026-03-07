@@ -11,8 +11,6 @@ declare global {
   }
 }
 
-const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
-const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
 const PLATFORMS = {
   IG: { label: 'Instagram', ratios: ['square', 'portrait', 'story', 'landscape'] },
@@ -57,33 +55,18 @@ interface ImageBox {
   width: number;
 }
 
-const fetchImages = async (query: string, page: number, perPage: number): Promise<string[]> => {
-  let images: string[] = [];
-  if (UNSPLASH_ACCESS_KEY) {
-    try {
-      const unsplashRes = await axios.get(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&page=${page}&per_page=${perPage}&client_id=${UNSPLASH_ACCESS_KEY}`);
-      if (unsplashRes.data.results && unsplashRes.data.results.length > 0) {
-        images = unsplashRes.data.results.map((img: any) => img.urls.regular);
-      }
-      console.log(`📷 Unsplash ["${query}"] page ${page}: ${images.length} result(s)`);
-    } catch (err) {
-      console.warn('Unsplash fetch failed, falling back to Pexels', err);
-    }
+const fetchImages = async (query: string, page: number, perPage: number, authToken?: string): Promise<string[]> => {
+  try {
+    const res = await axios.get(`/api/images?query=${encodeURIComponent(query)}&page=${page}&perPage=${perPage}`, {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    });
+    const images: string[] = res.data.images || [];
+    console.log(`📷 Images ["${query}"] page ${page}: ${images.length} result(s)`);
+    return images;
+  } catch (err: any) {
+    console.error('Image fetch failed', err?.response?.data?.error || err.message);
+    return [];
   }
-  if (images.length === 0) {
-    try {
-      const pexelsRes = await axios.get(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${perPage}&page=${page}`, {
-        headers: { Authorization: PEXELS_API_KEY || '' }
-      });
-      if (pexelsRes.data.photos && pexelsRes.data.photos.length > 0) {
-        images = pexelsRes.data.photos.map((p: any) => p.src.large2x);
-      }
-      console.log(`📷 Pexels ["${query}"] page ${page}: ${images.length} result(s)`);
-    } catch (err) {
-      console.error('Pexels fetch failed', err);
-    }
-  }
-  return images;
 };
 
 function App() {
@@ -342,7 +325,7 @@ function App() {
       const isNewSearch = bgSearchQuery !== currentSearchTerm;
       const nextPage = isNewSearch ? 1 : searchPage + 1;
       console.log(`🔄 Refresh: "${bgSearchQuery}" page ${nextPage}`);
-      const images = await fetchImages(bgSearchQuery, nextPage, 3);
+      const images = await fetchImages(bgSearchQuery, nextPage, 3, googleUser?.accessToken);
       console.log(`🖼️ Refresh returned ${images.length} image(s)`);
       if (images.length > 0) {
         setThumbnails(images);
@@ -554,7 +537,7 @@ function App() {
       setCurrentSearchTerm(searchTerm);
       setBgSearchQuery(searchTerm);
       setSearchPage(1);
-      const images = await fetchImages(searchTerm, 1, 4);
+      const images = await fetchImages(searchTerm, 1, 4, googleUser?.accessToken);
       if (images.length > 0) {
         const isMobile = window.innerWidth < 600;
         const cornerX = isMobile ? 130 : 250;
@@ -634,11 +617,7 @@ function App() {
                   { id: 'openrouter', name: 'OpenRouter', desc: 'Default · Free tier via OPENROUTER_API_KEY' },
                   { id: 'google', name: 'Google Gemini', desc: 'Alternative · Requires VITE_GEMINI_API_KEY' }
                 ] as const).map(p => (
-                  <button key={p.id} className={aiProvider === p.id ? 'active' : ''} onClick={() => {
-                    setAiProvider(p.id);
-                    if (p.id === 'openrouter') setLlmModel('openrouter/free');
-                    else setLlmModel('google/gemini-2.5-flash-lite');
-                  }}>
+                  <button key={p.id} className={aiProvider === p.id ? 'active' : ''} disabled>
                     <span className="model-name">{p.name}</span>
                     <span className="model-id">{p.desc}</span>
                   </button>
@@ -655,7 +634,7 @@ function App() {
                     { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash (Preview)' },
                     { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' }
                   ].map(m => (
-                    <button key={m.id} className={llmModel === m.id ? 'active' : ''} onClick={() => setLlmModel(m.id)}>
+                    <button key={m.id} className={llmModel === m.id ? 'active' : ''} disabled>
                       <span className="model-name">{m.name}</span>
                       <span className="model-id">{m.id}</span>
                     </button>
