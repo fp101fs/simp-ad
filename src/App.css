@@ -1168,6 +1168,12 @@ input:focus {
   white-space: nowrap;
 }
 .google-signin-btn:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+.google-signin-btn.inline-signin {
+  display: inline-flex;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
 
 .user-pill {
   display: flex; align-items: center; gap: 8px;

@@ -57,7 +57,7 @@ async function checkRateLimit(req: VercelRequest): Promise<
   const count = current ? parseInt(current, 10) : 0;
   if (count >= limit) {
     return { allowed: false, error: limit === 1
-      ? 'Free limit reached: 1 ad per 24 hours for guests. Sign in for 100 ads/day.'
+      ? 'Free limit reached: 1 ad per 24 hours per IP address.'
       : `Rate limit reached: ${limit} ads per 24 hours. Try again later.`
     };
   }
