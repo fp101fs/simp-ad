@@ -1,21 +1,21 @@
 name: Sync Release to Community
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [master]
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Mirror release to simpad-community
+      - name: Create release on simpad-community
         env:
           GH_TOKEN: ${{ secrets.COMMUNITY_REPO_TOKEN }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_TITLE: ${{ github.event.release.name }}
-          RELEASE_NOTES: ${{ github.event.release.body }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          gh release create "$RELEASE_TAG" \
+          SHORT_SHA="${GITHUB_SHA::7}"
+          gh release create "build-${SHORT_SHA}" \
             --repo fp101fs/simpad-community \
-            --title "$RELEASE_TITLE" \
-            --notes "$RELEASE_NOTES"
+            --title "${COMMIT_MSG}" \
+            --notes "Deployed commit [\`${SHORT_SHA}\`](${COMMIT_URL})"
