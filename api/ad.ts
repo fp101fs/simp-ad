@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! });
 
 const PEXELS_API_KEY = process.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
@@ -160,8 +161,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const imageUrl = pexelsRes.data.photos?.[0]?.src?.large2x || '';
 
     try {
-      await kv.lpush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
-      await kv.ltrim('ads:recent', 0, 99);
+      await redis.lpush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
+      await redis.ltrim('ads:recent', 0, 99);
     } catch (kvErr: any) { console.error('KV log failed:', kvErr.message); }
 
     return res.status(200).json({

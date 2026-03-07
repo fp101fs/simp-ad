@@ -1,4 +1,5 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
+const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! });
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
@@ -20,6 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const ads = await kv.lrange('ads:recent', 0, 49);
+  const ads = await redis.lrange('ads:recent', 0, 49);
   return res.status(200).json({ ads });
 }
