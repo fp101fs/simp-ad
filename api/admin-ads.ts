@@ -1,7 +1,16 @@
-import { Redis } from '@upstash/redis';
-const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! });
+import { createClient } from 'redis';
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+let _redis: ReturnType<typeof createClient> | null = null;
+async function getRedis() {
+  if (!_redis) {
+    _redis = createClient({ url: process.env.REDIS_URL });
+    _redis.on('error', (err) => console.error('Redis error:', err));
+    await _redis.connect();
+  }
+  return _redis;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,6 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const ads = await redis.lrange('ads:recent', 0, 49);
+  const r = await getRedis();
+  const ads = await r.lRange('ads:recent', 0, 49);
   return res.status(200).json({ ads });
 }

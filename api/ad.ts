@@ -1,8 +1,17 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Redis } from '@upstash/redis';
-const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL!, token: process.env.UPSTASH_REDIS_REST_TOKEN! });
+import { createClient } from 'redis';
+
+let _redis: ReturnType<typeof createClient> | null = null;
+async function getRedis() {
+  if (!_redis) {
+    _redis = createClient({ url: process.env.REDIS_URL });
+    _redis.on('error', (err) => console.error('Redis error:', err));
+    await _redis.connect();
+  }
+  return _redis;
+}
 
 const PEXELS_API_KEY = process.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
@@ -161,9 +170,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const imageUrl = pexelsRes.data.photos?.[0]?.src?.large2x || '';
 
     try {
-      await redis.lpush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
-      await redis.ltrim('ads:recent', 0, 99);
-    } catch (kvErr: any) { console.error('KV log failed:', kvErr.message); }
+      const r = await getRedis();
+      await r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
+      await r.lTrim('ads:recent', 0, 99);
+    } catch (kvErr: any) { console.error('Redis log failed:', kvErr.message); }
 
     return res.status(200).json({
       prompt,
