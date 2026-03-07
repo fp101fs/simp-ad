@@ -1,0 +1,21 @@
+name: Sync Release to Community
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror release to simpad-community
+        env:
+          GH_TOKEN: ${{ secrets.COMMUNITY_REPO_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TITLE: ${{ github.event.release.name }}
+          RELEASE_NOTES: ${{ github.event.release.body }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --repo fp101fs/simpad-community \
+            --title "$RELEASE_TITLE" \
+            --notes "$RELEASE_NOTES"
