@@ -73,8 +73,8 @@ function App() {
   const [prompt, setPrompt] = useState('');
   const [activePlatform, setActivePlatform] = useState<keyof typeof PLATFORMS>('IG');
   const [format, setFormat] = useState('square');
-  const [llmModel, setLlmModel] = useState('openrouter/free');
-  const [aiProvider, setAiProvider] = useState<'google' | 'openrouter'>('openrouter');
+  const [llmModel] = useState('openrouter/free');
+  const [aiProvider] = useState<'google' | 'openrouter'>('openrouter');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
