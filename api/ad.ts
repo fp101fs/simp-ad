@@ -21,6 +21,49 @@ const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_FALLBACK_API_KEY;
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+async function checkRateLimit(req: VercelRequest): Promise<
+  { allowed: true; key: string | null } |
+  { allowed: false; error: string }
+> {
+  const authHeader = req.headers.authorization as string | undefined;
+  let key: string;
+  let limit: number;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    try {
+      const info = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const email: string = info.data.email;
+      if (email === process.env.VITE_ADMIN_EMAIL) {
+        return { allowed: true, key: null };
+      }
+      key = `ratelimit:user:${email}`;
+      limit = 100;
+    } catch {
+      const ip = ((req.headers['x-forwarded-for'] as string) || '').split(',')[0].trim() || 'unknown';
+      key = `ratelimit:ip:${ip}`;
+      limit = 1;
+    }
+  } else {
+    const ip = ((req.headers['x-forwarded-for'] as string) || '').split(',')[0].trim() || 'unknown';
+    key = `ratelimit:ip:${ip}`;
+    limit = 1;
+  }
+
+  const r = await getRedis();
+  const current = await r.get(key);
+  const count = current ? parseInt(current, 10) : 0;
+  if (count >= limit) {
+    return { allowed: false, error: limit === 1
+      ? 'Free limit reached: 1 ad per 24 hours for guests. Sign in for 100 ads/day.'
+      : `Rate limit reached: ${limit} ads per 24 hours. Try again later.`
+    };
+  }
+  return { allowed: true, key };
+}
+
 async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
   const response = await axios.post(
     'https://openrouter.ai/api/v1/chat/completions',
@@ -54,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
   );
 
   if (req.method === 'OPTIONS') {
@@ -66,6 +109,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid "prompt" query parameter' });
+  }
+
+  const rateCheck = await checkRateLimit(req);
+  if (!rateCheck.allowed) {
+    return res.status(429).json({ error: rateCheck.error });
   }
 
   const modelId = (requestedModel as string) || 'openrouter/free';
@@ -174,6 +222,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
       await r.lTrim('ads:recent', 0, 99);
     } catch (kvErr: any) { console.error('Redis log failed:', kvErr.message); }
+
+    if (rateCheck.key) {
+      try {
+        const r = await getRedis();
+        const newCount = await r.incr(rateCheck.key);
+        if (newCount === 1) await r.expire(rateCheck.key, 86400);
+      } catch (e: any) { console.error('Rate limit increment failed:', e.message); }
+    }
 
     return res.status(200).json({
       prompt,

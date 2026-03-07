@@ -536,7 +536,9 @@ function App() {
     const textShadow = searchParams.get('textShadow') !== 'false';
 
     try {
-      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`);
+      const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`, {
+        headers: googleUser ? { Authorization: `Bearer ${googleUser.accessToken}` } : {},
+      });
       const elapsed = ((Date.now() - loadingStartRef.current) / 1000).toFixed(1);
       const u = aiRes.data.tokenUsage;
       const tokenStr = u ? ` | ~${fmtTokens(u.prompt_tokens + u.completion_tokens)} tokens` : '';
@@ -567,7 +569,13 @@ function App() {
         });
         if (images.length > 1) setThumbnails(images.slice(1));
       } else { setError('No relevant images found.'); }
-    } catch (err: any) { console.error('💥 Failed to generate ad:', err?.response?.data?.details || err.message || err); setError('Failed to generate ad.'); } finally { setLoading(false); }
+    } catch (err: any) {
+      console.error('💥 Failed to generate ad:', err?.response?.data?.details || err.message || err);
+      const msg = err?.response?.status === 429
+        ? err.response.data.error
+        : 'Failed to generate ad.';
+      setError(msg);
+    } finally { setLoading(false); }
   };
 
   const FONT_SIZE_LABELS: Record<string, string> = { sm: 'Sm', md: 'Md', lg: 'Lg' };
