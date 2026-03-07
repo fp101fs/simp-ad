@@ -160,6 +160,8 @@ function App() {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
   const [searchPage, setSearchPage] = useState(1);
+  const [imagePool, setImagePool] = useState<string[]>([]);
+  const [imagePoolIndex, setImagePoolIndex] = useState(0);
   const [refreshingThumbs, setRefreshingThumbs] = useState(false);
 
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
@@ -560,17 +562,38 @@ function App() {
 
       trackEvent('generate_ad_success', 'AI', 'Success');
 
-      setCurrentSearchTerm(searchTerm);
       setBgSearchQuery(searchTerm);
-      setSearchPage(1);
-      const images = await fetchImages(searchTerm, 1, 4, googleUser?.accessToken);
-      if (images.length > 0) {
+
+      let pool = imagePool;
+      let idx: number;
+
+      if (searchTerm === currentSearchTerm && pool.length > 0) {
+        const nextIdx = imagePoolIndex + 1;
+        if (nextIdx >= pool.length) {
+          const nextPage = Math.floor(pool.length / 4) + 1;
+          const moreImages = await fetchImages(searchTerm, nextPage, 4, googleUser?.accessToken);
+          pool = [...pool, ...moreImages];
+          setImagePool(pool);
+        }
+        idx = nextIdx < pool.length ? nextIdx : imagePoolIndex;
+      } else {
+        setSearchPage(1);
+        const freshImages = await fetchImages(searchTerm, 1, 4, googleUser?.accessToken);
+        pool = freshImages;
+        setImagePool(pool);
+        idx = 0;
+      }
+
+      setCurrentSearchTerm(searchTerm);
+      setImagePoolIndex(idx);
+
+      if (pool.length > 0) {
         const isMobile = window.innerWidth < 600;
         const cornerX = isMobile ? 130 : 250;
         const cornerY = isMobile ? 130 : 250;
 
         setResult({
-          image: images[0],
+          image: pool[idx],
           boxes: [
             { id: 'main', text: adCopy, x: 0, y: 0, width: 550, fontSize: 'md', fontFamily: 'sans', color: textColor, isGradient: textGradient, outline: textOutline, outlineColor: '#000000', shadow: textShadow, shadowColor: '#000000' },
             { id: 'watermark', text: 'simp.ad', x: -cornerX + 30, y: cornerY + 20, width: 200, fontSize: 'sm', fontFamily: 'sans', color: '#ffffff', isGradient: false, outline: false, outlineColor: '#000000', shadow: true, shadowColor: '#000000' }
@@ -578,7 +601,7 @@ function App() {
           imageBoxes: [{ id: 'logo', src: '/assets/logo.png', x: cornerX, y: -cornerY, width: 80 }],
           postBody: generatedPostBody
         });
-        if (images.length > 1) setThumbnails(images.slice(1));
+        setThumbnails(pool.filter((_, i) => i !== idx).slice(0, 3));
       } else { setError('No relevant images found.'); }
     } catch (err: any) {
       console.error('💥 Failed to generate ad:', err?.response?.data?.details || err.message || err);
