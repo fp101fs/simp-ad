@@ -135,7 +135,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const FREE_MODEL = 'openrouter/free';
+      const FREE_MODELS = [
+        'stepfun/step-3.5-flash:free',
+        'arcee-ai/trinity-large-preview:free',
+        'z-ai/glm-4.5-air:free',
+        'nvidia/nemotron-3-nano-30b-a3b:free',
+        'arcee-ai/trinity-mini:free',
+      ];
+      const pickFreeModel = () => FREE_MODELS[Math.floor(Math.random() * FREE_MODELS.length)];
       const MAX_FREE_ATTEMPTS = 3;
       const RETRY_DELAY_MS = 3000;
       let lastError: any;
@@ -143,9 +150,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Attempts 1–3: free model with primary key
       for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
-        console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${FREE_MODEL}"...`);
+        const freeModel = pickFreeModel();
+        console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${freeModel}"...`);
         try {
-          const { parsed, actualModel, usage } = await callOpenRouter(FREE_MODEL, OPENROUTER_API_KEY, prompt);
+          const { parsed, actualModel, usage } = await callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt);
           searchTerm = parsed.searchTerm;
           adCopy = parsed.adCopy;
           postBody = parsed.postBody;
