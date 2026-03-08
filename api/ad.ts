@@ -122,14 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const FREE_MODELS = [
     'nvidia/nemotron-3-nano-30b-a3b:free',
-    'arcee-ai/trinity-mini:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'qwen/qwen3-next-80b-a3b-instruct:free',
     'liquid/lfm-2.5-1.2b-instruct:free',
-    'mistralai/mistral-small-3.1-24b-instruct:free',
-    'qwen/qwen3-4b:free',
-    'nousresearch/hermes-3-llama-3.1-405b:free',
-    'meta-llama/llama-3.2-3b-instruct:free',
+    'arcee-ai/trinity-mini:free',
   ];
 
   try {
