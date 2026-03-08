@@ -123,7 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const FREE_MODELS = [
     'stepfun/step-3.5-flash:free',
     'arcee-ai/trinity-large-preview:free',
-    'z-ai/glm-4.5-air:free',
     'nvidia/nemotron-3-nano-30b-a3b:free',
     'arcee-ai/trinity-mini:free',
     'meta-llama/llama-3.3-70b-instruct:free',
