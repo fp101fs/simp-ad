@@ -652,20 +652,35 @@ input:focus {
 .undo-icon { font-size: 1.3rem; }
 .undo-label { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.7; }
 
+.ad-canvas-wrapper {
+  position: relative;
+}
+
 .share-ctrl-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: 1px solid #555;
-  color: #aaa;
-  border-radius: 8px;
-  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  border-radius: 10px;
+  padding: 7px 11px;
   cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.15s;
 }
-.share-ctrl-btn:hover { border-color: #aaa; color: #fff; }
+.share-ctrl-btn:hover {
+  background: rgba(0,0,0,0.75);
+  border-color: rgba(255,255,255,0.35);
+}
 
-.share-menu-wrapper { position: relative; }
+.share-menu-wrapper {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 10;
+}
 .share-menu {
   position: absolute;
   bottom: calc(100% + 6px);
