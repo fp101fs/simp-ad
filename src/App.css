@@ -1353,6 +1353,48 @@ input:focus {
   to { bottom: 40px; opacity: 1; }
 }
 
+/* User menu popup */
+.user-pill { position: relative; }
+.user-pill-trigger {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer; padding: 4px 8px;
+  border-radius: 20px; color: inherit;
+}
+.user-pill-trigger:hover { background: rgba(255,255,255,0.08); }
+.chevron-icon { opacity: 0.6; transition: transform 0.15s; }
+
+.user-menu-popup {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: #1e1e2e; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px; padding: 4px; min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 200;
+}
+.user-menu-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 12px; background: none; border: none;
+  color: inherit; cursor: pointer; border-radius: 6px; font-size: 14px; text-align: left;
+}
+.user-menu-item:hover { background: rgba(255,255,255,0.08); }
+.user-menu-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0; }
+.user-menu-signout { color: #f87171; }
+.user-menu-signout:hover { background: rgba(248,113,113,0.1); }
+
+/* Help modal */
+.help-modal { max-width: 400px; }
+.help-links { display: flex; flex-direction: column; gap: 2px; margin: 12px 0; }
+.help-section-label { font-size: 11px; text-transform: uppercase; opacity: 0.4; padding: 8px 10px 2px; letter-spacing: 0.08em; }
+.help-link-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px; text-decoration: none; color: inherit;
+  transition: background 0.12s;
+}
+.help-link-row:hover { background: rgba(255,255,255,0.07); }
+.help-link-icon { font-size: 16px; width: 20px; text-align: center; opacity: 0.7; display: flex; align-items: center; justify-content: center; }
+.help-link-text { display: flex; flex-direction: column; flex: 1; }
+.help-link-text strong { font-size: 14px; }
+.help-link-sub { font-size: 12px; opacity: 0.5; }
+.help-link-arrow { opacity: 0.35; font-size: 13px; }
+
 @media print {
   .input-group, .app-header, .download-hint, .insta-controls, .mode-toggle, .platform-controls, .style-controls { display: none; }
   .ad-container { border-radius: 0; box-shadow: none; }

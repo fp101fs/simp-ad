@@ -76,6 +76,8 @@ function App() {
   const [llmModel] = useState('openrouter/free');
   const [aiProvider] = useState<'google' | 'openrouter'>('openrouter');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
@@ -83,6 +85,7 @@ function App() {
   const adContainerRef = useRef<HTMLDivElement>(null);
   const platformRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
@@ -156,6 +159,16 @@ function App() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [result]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [currentSearchTerm, setCurrentSearchTerm] = useState('');
@@ -625,11 +638,34 @@ function App() {
         <div className="header-left">
           <div className="auth-area">
             {googleUser ? (
-              <div className="user-pill">
-                <img src={googleUser.picture} alt={googleUser.name} className="user-avatar" />
-                <span className="user-name">{googleUser.name.split(' ')[0]}</span>
-                {isAdmin && <button className="admin-btn" onClick={() => { setIsAdminOpen(true); fetchAdminAds(); }}>Admin</button>}
-                <button className="signout-btn" onClick={() => { googleLogout(); setGoogleUser(null); }}>Sign out</button>
+              <div className="user-pill" ref={userMenuRef}>
+                <button className="user-pill-trigger" onClick={() => setIsUserMenuOpen(v => !v)}>
+                  <img src={googleUser.picture} alt={googleUser.name} className="user-avatar" />
+                  <span className="user-name">{googleUser.name.split(' ')[0]}</span>
+                  <svg className="chevron-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="2 4 6 8 10 4"/>
+                  </svg>
+                </button>
+                {isUserMenuOpen && (
+                  <div className="user-menu-popup">
+                    <button className="user-menu-item" onClick={() => { setIsSettingsOpen(true); setIsUserMenuOpen(false); }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                      </svg>
+                      Settings
+                    </button>
+                    {isAdmin && (
+                      <button className="user-menu-item" onClick={() => { setIsAdminOpen(true); fetchAdminAds(); setIsUserMenuOpen(false); }}>
+                        Admin
+                      </button>
+                    )}
+                    <div className="user-menu-divider" />
+                    <button className="user-menu-item user-menu-signout" onClick={() => { googleLogout(); setGoogleUser(null); setIsUserMenuOpen(false); }}>
+                      Sign out
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button className="google-signin-btn" onClick={() => googleLogin()}>
@@ -647,8 +683,12 @@ function App() {
           <button className="settings-btn" onClick={handleShare} title="Share Setup">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
-          <button className="settings-btn" onClick={() => setIsSettingsOpen(true)}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <button className="settings-btn help-btn" onClick={() => setIsHelpOpen(true)} title="Help & Links">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
           </button>
         </div>
         <p className="subtitle">✨AI Ad Maker</p>
@@ -705,6 +745,63 @@ function App() {
             )}
 
             <button className="primary-btn" onClick={() => setIsSettingsOpen(false)}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {isHelpOpen && (
+        <div className="modal-overlay" onClick={() => setIsHelpOpen(false)}>
+          <div className="modal-content help-modal" onClick={e => e.stopPropagation()}>
+            <h3>Help & Resources</h3>
+            <div className="help-links">
+              <a href="https://app.supademo.com/demo/cmmg7l4i156aknr996x66pzrw?utm_source=link" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">▶</span>
+                <span className="help-link-text"><strong>Watch Demo</strong><span className="help-link-sub">Interactive Supademo walkthrough</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <a href="https://youtube.com/shorts/hpP813bxHKA" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.52V8.48L15.5 12l-5.75 3.52z"/></svg>
+                </span>
+                <span className="help-link-text"><strong>Promo Video</strong><span className="help-link-sub">YouTube</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <a href="https://www.producthunt.com/products/simp-ad" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">🚀</span>
+                <span className="help-link-text"><strong>Product Hunt</strong><span className="help-link-sub">Vote & leave a review</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <div className="help-section-label">Community & Support</div>
+              <a href="https://github.com/fp101fs/simpad-community/discussions" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                </span>
+                <span className="help-link-text"><strong>Discussions</strong><span className="help-link-sub">github.com/fp101fs/simpad-community</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <a href="https://github.com/fp101fs/simpad-community/issues/new?template=bug_report.yml" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                </span>
+                <span className="help-link-text"><strong>Report a Bug</strong><span className="help-link-sub">Opens GitHub issue</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <a href="https://github.com/fp101fs/simpad-community/issues/new?template=feature_request.yml" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                </span>
+                <span className="help-link-text"><strong>Request a Feature</strong><span className="help-link-sub">Opens GitHub issue</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+              <a href="https://github.com/fp101fs/simpad-community/issues/new?template=support.yml" target="_blank" rel="noopener noreferrer" className="help-link-row">
+                <span className="help-link-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+                </span>
+                <span className="help-link-text"><strong>Get Support</strong><span className="help-link-sub">Opens GitHub issue</span></span>
+                <span className="help-link-arrow">↗</span>
+              </a>
+            </div>
+            <button className="primary-btn" onClick={() => setIsHelpOpen(false)}>Close</button>
           </div>
         </div>
       )}
