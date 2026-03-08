@@ -616,7 +616,16 @@ function App() {
       const elapsed = ((Date.now() - loadingStartRef.current) / 1000).toFixed(1);
       const u = aiRes.data.tokenUsage;
       const tokenStr = u ? ` | ~${fmtTokens(u.prompt_tokens + u.completion_tokens)} tokens` : '';
-      console.log(`✅ Ad generated using model: "${aiRes.data.modelUsed}" | ${elapsed}s${tokenStr}`);
+      if (aiRes.data.failedAttempts?.length) {
+        for (const f of aiRes.data.failedAttempts) {
+          console.log(`  ❌ Failed: "${f.model}" — ${f.error}`);
+        }
+      }
+      const att = aiRes.data.attemptNumber > 1 ? ` (attempt ${aiRes.data.attemptNumber})` : '';
+      const req = aiRes.data.modelRequested && aiRes.data.modelRequested !== aiRes.data.modelUsed
+        ? ` [requested: ${aiRes.data.modelRequested}]`
+        : '';
+      console.log(`✅ Ad generated: "${aiRes.data.modelUsed}"${att}${req} | ${elapsed}s${tokenStr}`);
       const searchTerm = bgTerm || aiRes.data.searchTerm;
       const adCopy = aiRes.data.adCopy;
       const generatedPostBody = aiRes.data.postBody;

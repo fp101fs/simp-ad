@@ -137,6 +137,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let adCopy = '';
     let postBody = '';
     let modelUsed = '';
+    let modelRequested = '';
+    let attemptNumber = 0;
+    const failedAttempts: { model: string; error: string }[] = [];
     let tokenUsage: { prompt_tokens: number; completion_tokens: number } | null = null;
     let modelIndex = 0;
 
@@ -150,14 +153,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const redis = await getRedis();
       modelIndex = (await redis.incr('model:index')) - 1;
-      const MAX_FREE_ATTEMPTS = 3;
+      const MAX_FREE_ATTEMPTS = FREE_MODELS.length;
       const RETRY_DELAY_MS = 3000;
       let lastError: any;
       let succeeded = false;
 
-      // Attempts 1–3: free model with primary key
+      // Try all free models sequentially
       for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
         const freeModel = FREE_MODELS[(modelIndex + attempt - 1) % FREE_MODELS.length];
+        if (attempt === 1) modelRequested = freeModel;
         console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${freeModel}"...`);
         try {
           const { parsed, actualModel, usage } = await callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt);
@@ -166,21 +170,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           postBody = parsed.postBody;
           modelUsed = actualModel;
           tokenUsage = usage;
+          attemptNumber = attempt;
           console.log(`✅ Ad generated using model: "${actualModel}"`);
           succeeded = true;
           break;
         } catch (err: any) {
+          failedAttempts.push({ model: freeModel, error: err.message });
           lastError = err;
           if (attempt < MAX_FREE_ATTEMPTS) {
-            console.log(`❌ Attempt ${attempt} failed: ${err.message}. Retrying in ${RETRY_DELAY_MS / 1000}s...`);
-            await sleep(RETRY_DELAY_MS);
+            console.log(`❌ Attempt ${attempt} failed (${freeModel}): ${err.message}. Trying next...`);
           } else {
             console.log(`❌ Attempt ${attempt} failed: ${err.message}.`);
           }
         }
       }
 
-      // Attempt 4: fallback model with fallback key
+      // Fallback: paid model with fallback key
       if (!succeeded) {
         const FALLBACK_MODEL = 'google/gemini-2.5-flash-lite';
         if (!OPENROUTER_FALLBACK_API_KEY) {
@@ -195,6 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         postBody = parsed.postBody;
         modelUsed = actualModel;
         tokenUsage = usage;
+        attemptNumber = MAX_FREE_ATTEMPTS + 1;
         console.log(`✅ Ad generated using model: "${actualModel}"`);
       }
 
@@ -253,6 +259,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       adCopy,
       postBody,
       modelUsed,
+      modelRequested,
+      attemptNumber,
+      modelIndex: modelIndex % FREE_MODELS.length,
+      failedAttempts,
       tokenUsage,
       image: imageUrl,
     });
