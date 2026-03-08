@@ -680,9 +680,6 @@ function App() {
           simp.<img src="/simp-ad-favicon/apple-touch-icon.png" alt="AI Ad Maker" className="title-logo" />
         </h1>
         <div className="header-right">
-          <button className="settings-btn" onClick={handleShare} title="Share Setup">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-          </button>
           <button className="settings-btn help-btn" onClick={() => setIsHelpOpen(true)} title="Help & Links">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/>
@@ -833,10 +830,20 @@ function App() {
         {result && (
           <div className="ad-preview">
             <div className="style-controls">
-              {undoState && (
-                <button className="undo-btn" onClick={undoCanvasChange} title="Undo last change">↩</button>
-              )}
               <div className="controls-right">
+                {undoState && (
+                  <button className="undo-btn" onClick={undoCanvasChange} title="Undo last change">
+                    <span className="undo-icon">↩</span>
+                    <span className="undo-label">UNDO</span>
+                  </button>
+                )}
+                <button className="share-ctrl-btn" onClick={handleShare} title="Share Setup">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                </button>
                 <div className="platform-dropdown" ref={platformRef}>
                   <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
                     <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
