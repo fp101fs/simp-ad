@@ -81,6 +81,7 @@ function App() {
   const [isPlatformSelectorOpen, setIsPlatformSelectorOpen] = useState(false);
   const [isBgSelectorOpen, setIsBgSelectorOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const [bgSearchQuery, setBgSearchQuery] = useState('');
   const adContainerRef = useRef<HTMLDivElement>(null);
   const platformRef = useRef<HTMLDivElement>(null);
@@ -88,6 +89,7 @@ function App() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const addMenuRef = useRef<HTMLDivElement>(null);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
   const replaceFileInputRef = useRef<HTMLInputElement>(null);
   const replaceTargetIdRef = useRef<string | null>(null);
 
@@ -143,6 +145,7 @@ function App() {
       if (platformRef.current && !platformRef.current.contains(event.target as Node)) setIsPlatformSelectorOpen(false);
       if (bgRef.current && !bgRef.current.contains(event.target as Node)) setIsBgSelectorOpen(false);
       if (addMenuRef.current && !addMenuRef.current.contains(event.target as Node)) setIsAddMenuOpen(false);
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target as Node)) setIsShareMenuOpen(false);
 
       // Close editor if clicking outside everything related to it
       if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
@@ -527,8 +530,13 @@ function App() {
     finally { setDownloading(false); }
   };
 
-  const handleShare = async () => {
-    if (!result) return;
+  const handleCopyLink = async () => {
+    setIsShareMenuOpen(false);
+    if (!result) {
+      await navigator.clipboard.writeText('https://simp.ad');
+      setToast('Link copied!');
+      return;
+    }
     trackEvent('share_link', 'Engagement', 'Share Ad');
     try {
       const resp = await fetch('/api/share', {
@@ -538,10 +546,50 @@ function App() {
       });
       const { id } = await resp.json();
       const url = `https://simp.ad/?ad=${id}`;
-      navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(url);
       setToast('Link copied to clipboard!');
     } catch {
       setToast('Failed to create share link');
+    }
+  };
+
+  const handleSharePost = async () => {
+    setIsShareMenuOpen(false);
+    if (!result || !adContainerRef.current) return;
+    trackEvent('share_image', 'Engagement', 'Share Post Image');
+
+    if (result.postBody) {
+      try {
+        await navigator.clipboard.writeText(result.postBody);
+        setToast('Caption copied! Choose an app to share your image.');
+      } catch {
+        setToast('Opening share dialog…');
+      }
+    }
+
+    try {
+      const el = adContainerRef.current;
+      const prevRadius = el.style.borderRadius;
+      el.style.borderRadius = '0';
+      const canvas = await html2canvas(el, { useCORS: true, scale: 2, backgroundColor: null });
+      el.style.borderRadius = prevRadius;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'simp-ad.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'My Ad' });
+        } else {
+          const link = document.createElement('a');
+          link.download = 'simp-ad.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          setToast('Image saved — share from your downloads!');
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error(err);
+      setToast('Failed to prepare image for sharing.');
     }
   };
 
@@ -855,13 +903,38 @@ function App() {
                     <span className="undo-label">UNDO</span>
                   </button>
                 )}
-                <button className="share-ctrl-btn" onClick={handleShare} title="Share Setup">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                  </svg>
-                </button>
+                <div className="share-menu-wrapper" ref={shareMenuRef}>
+                  <button
+                    className="share-ctrl-btn"
+                    onClick={() => setIsShareMenuOpen(v => !v)}
+                    title="Share"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                  </button>
+                  {isShareMenuOpen && (
+                    <div className="share-menu">
+                      <button className="share-menu-item" onClick={handleCopyLink}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                        </svg>
+                        Copy Link
+                      </button>
+                      <button className="share-menu-item" onClick={handleSharePost} disabled={!result}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                          <polyline points="16 6 12 2 8 6"/>
+                          <line x1="12" y1="2" x2="12" y2="15"/>
+                        </svg>
+                        Share This Post
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="platform-dropdown" ref={platformRef}>
                   <button className="platform-trigger" onClick={() => setIsPlatformSelectorOpen(!isPlatformSelectorOpen)}>
                     <div className="platform-btn active small-btn">{PLATFORM_ICONS[activePlatform]}</div>
