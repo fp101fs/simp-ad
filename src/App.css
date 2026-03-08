@@ -1454,6 +1454,12 @@ input:focus {
 .help-link-sub { font-size: 13px; opacity: 0.72; }
 .help-link-arrow { opacity: 0.55; font-size: 14px; }
 
+@media (max-width: 600px) {
+  .user-name {
+    display: none;
+  }
+}
+
 @media print {
   .input-group, .app-header, .download-hint, .insta-controls, .mode-toggle, .platform-controls, .style-controls { display: none; }
   .ad-container { border-radius: 0; box-shadow: none; }

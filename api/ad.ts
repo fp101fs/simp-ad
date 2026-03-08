@@ -121,15 +121,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
   const FREE_MODELS = [
-    'stepfun/step-3.5-flash:free',
-    'arcee-ai/trinity-large-preview:free',
     'nvidia/nemotron-3-nano-30b-a3b:free',
     'arcee-ai/trinity-mini:free',
     'meta-llama/llama-3.3-70b-instruct:free',
     'qwen/qwen3-next-80b-a3b-instruct:free',
-    'liquid/lfm-2.5-1.2b-thinking:free',
+    'liquid/lfm-2.5-1.2b-instruct:free',
     'mistralai/mistral-small-3.1-24b-instruct:free',
     'qwen/qwen3-4b:free',
+    'nousresearch/hermes-3-llama-3.1-405b:free',
+    'meta-llama/llama-3.2-3b-instruct:free',
   ];
 
   try {
@@ -149,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const redis = await getRedis();
-      modelIndex = parseInt(await redis.get('model:index') ?? '0', 10) || 0;
+      modelIndex = (await redis.incr('model:index')) - 1;
       const MAX_FREE_ATTEMPTS = 3;
       const RETRY_DELAY_MS = 3000;
       let lastError: any;
@@ -236,7 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const r = await getRedis();
       await r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
       await r.lTrim('ads:recent', 0, 99);
-      await r.set('model:index', String((modelIndex + 1) % FREE_MODELS.length));
+      // model:index is advanced atomically via incr at request start; no write needed here
     } catch (kvErr: any) { console.error('Redis log failed:', kvErr.message); }
 
     if (rateCheck.key) {
