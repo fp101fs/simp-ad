@@ -612,6 +612,7 @@ function App() {
     try {
       const aiRes = await axios.get(`/api/ad?prompt=${encodeURIComponent(query)}&model=${llmModel}&provider=${aiProvider}`, {
         headers: googleUser ? { Authorization: `Bearer ${googleUser.accessToken}` } : {},
+        timeout: 55000,
       });
       const elapsed = ((Date.now() - loadingStartRef.current) / 1000).toFixed(1);
       const u = aiRes.data.tokenUsage;
