@@ -19,6 +19,11 @@ async function getRedis() {
   return _redis;
 }
 
+// Race a promise against a timeout; resolves with fallback instead of hanging forever.
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
 const PEXELS_API_KEY = process.env.VITE_PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 // Prefer the non-VITE_ prefixed key (server-side secret); fall back to legacy VITE_ key
@@ -58,7 +63,7 @@ async function checkRateLimit(req: VercelRequest): Promise<
   }
 
   const r = await getRedis();
-  const current = await r.get(key);
+  const current = await withTimeout(r.get(key), 3000, null);
   const count = current ? parseInt(current, 10) : 0;
   if (count >= limit) {
     return { allowed: false, error: limit === 1
@@ -125,13 +130,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing or invalid "prompt" query parameter' });
   }
 
-  let rateCheck: Awaited<ReturnType<typeof checkRateLimit>>;
-  try {
-    rateCheck = await checkRateLimit(req);
-  } catch (err: any) {
-    console.error('Rate limit check failed, allowing request:', err.message);
-    rateCheck = { allowed: true, key: null };
-  }
+  const rateCheck = await withTimeout(
+    checkRateLimit(req).catch((err: any) => {
+      console.error('Rate limit check failed, allowing request:', err.message);
+      return { allowed: true, key: null } as const;
+    }),
+    6000,
+    { allowed: true, key: null } as const
+  );
   if (!rateCheck.allowed) {
     return res.status(429).json({ error: (rateCheck as { allowed: false; error: string }).error });
   }
@@ -164,8 +170,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const redis = await getRedis();
-      modelIndex = (await redis.incr('model:index')) - 1;
+      try {
+        const redis = await getRedis();
+        modelIndex = (await withTimeout(redis.incr('model:index'), 3000, 1)) - 1;
+      } catch (err: any) {
+        console.error('Redis model:index failed, using 0:', err.message);
+        modelIndex = 0;
+      }
       modelRequested = FREE_MODELS[modelIndex % FREE_MODELS.length];
       let succeeded = false;
       let lastError: any;
@@ -249,19 +260,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const imageUrl = pexelsRes.data.photos?.[0]?.src?.large2x || '';
 
-    try {
-      const r = await getRedis();
-      await r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }));
-      await r.lTrim('ads:recent', 0, 99);
-      // model:index is advanced atomically via incr at request start; no write needed here
-    } catch (kvErr: any) { console.error('Redis log failed:', kvErr.message); }
+    // Non-critical Redis writes — fire with short deadlines so they never block the response
+    withTimeout(
+      getRedis().then(r => r.lPush('ads:recent', JSON.stringify({ ts: new Date().toISOString(), prompt, searchTerm, adCopy, postBody, modelUsed, image: imageUrl }))
+        .then(() => r.lTrim('ads:recent', 0, 99))),
+      3000, undefined
+    ).catch((kvErr: any) => console.error('Redis log failed:', kvErr.message));
 
     if (rateCheck.key) {
-      try {
-        const r = await getRedis();
-        const newCount = await r.incr(rateCheck.key);
-        if (newCount === 1) await r.expire(rateCheck.key, 86400);
-      } catch (e: any) { console.error('Rate limit increment failed:', e.message); }
+      withTimeout(
+        getRedis().then(r => r.incr(rateCheck.key!).then(n => { if (n === 1) r.expire(rateCheck.key!, 86400); })),
+        3000, undefined
+      ).catch((e: any) => console.error('Rate limit increment failed:', e.message));
     }
 
     return res.status(200).json({
