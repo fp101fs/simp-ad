@@ -5,9 +5,15 @@ import { createClient } from 'redis';
 let _redis: ReturnType<typeof createClient> | null = null;
 async function getRedis() {
   if (!_redis) {
-    _redis = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000 } });
-    _redis.on('error', (err) => console.error('Redis error:', err));
-    await _redis.connect();
+    const client = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000 }, commandsQueueMaxLength: 10 });
+    client.on('error', (err) => console.error('Redis error:', err));
+    try {
+      await client.connect();
+    } catch (err) {
+      _redis = null;
+      throw err;
+    }
+    _redis = client;
   }
   return _redis;
 }

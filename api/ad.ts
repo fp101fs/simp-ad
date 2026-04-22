@@ -6,9 +6,15 @@ import { createClient } from 'redis';
 let _redis: ReturnType<typeof createClient> | null = null;
 async function getRedis() {
   if (!_redis) {
-    _redis = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000 } });
-    _redis.on('error', (err) => console.error('Redis error:', err));
-    await _redis.connect();
+    const client = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000 }, commandsQueueMaxLength: 10 });
+    client.on('error', (err) => console.error('Redis error:', err));
+    try {
+      await client.connect();
+    } catch (err) {
+      _redis = null;
+      throw err;
+    }
+    _redis = client;
   }
   return _redis;
 }
@@ -119,9 +125,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing or invalid "prompt" query parameter' });
   }
 
-  const rateCheck = await checkRateLimit(req);
+  let rateCheck: Awaited<ReturnType<typeof checkRateLimit>>;
+  try {
+    rateCheck = await checkRateLimit(req);
+  } catch (err: any) {
+    console.error('Rate limit check failed, allowing request:', err.message);
+    rateCheck = { allowed: true, key: null };
+  }
   if (!rateCheck.allowed) {
-    return res.status(429).json({ error: rateCheck.error });
+    return res.status(429).json({ error: (rateCheck as { allowed: false; error: string }).error });
   }
 
   const modelId = (requestedModel as string) || 'openrouter/free';
