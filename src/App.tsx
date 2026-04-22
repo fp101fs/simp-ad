@@ -680,7 +680,8 @@ function App() {
         setError(err.response.data.error);
         if (!googleUser) setRateLimitHit(true);
       } else {
-        setError('Failed to generate ad.');
+        const detail = err?.response?.data?.details || err?.response?.data?.error;
+        setError(detail ? `Failed to generate ad: ${detail}` : 'Failed to generate ad.');
       }
     } finally { setLoading(false); }
   };
