@@ -19,7 +19,6 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_FALLBACK_API_KEY;
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 async function checkRateLimit(req: VercelRequest): Promise<
   { allowed: true; key: string | null } |
@@ -74,7 +73,7 @@ async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
         'HTTP-Referer': 'https://simp.ad',
         'X-Title': 'simp.ad',
       },
-      timeout: 15000,
+      timeout: 10000,
     }
   );
   const actualModel = response.data.model || modelId;
@@ -149,7 +148,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const redis = await getRedis();
       modelIndex = (await redis.incr('model:index')) - 1;
       const MAX_FREE_ATTEMPTS = FREE_MODELS.length;
-      const RETRY_DELAY_MS = 3000;
       let lastError: any;
       let succeeded = false;
 
@@ -188,7 +186,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           throw lastError;
         }
         console.log(`🔄 Switching to fallback model "${FALLBACK_MODEL}"...`);
-        await sleep(RETRY_DELAY_MS);
         const { parsed, actualModel, usage } = await callOpenRouter(FALLBACK_MODEL, OPENROUTER_FALLBACK_API_KEY, prompt);
         searchTerm = parsed.searchTerm;
         adCopy = parsed.adCopy;
