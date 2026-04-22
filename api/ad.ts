@@ -6,7 +6,7 @@ import { createClient } from 'redis';
 let _redis: ReturnType<typeof createClient> | null = null;
 async function getRedis() {
   if (!_redis) {
-    _redis = createClient({ url: process.env.REDIS_URL });
+    _redis = createClient({ url: process.env.REDIS_URL, socket: { connectTimeout: 5000 } });
     _redis.on('error', (err) => console.error('Redis error:', err));
     await _redis.connect();
   }
@@ -73,7 +73,8 @@ async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
         Authorization: `Bearer ${apiKey}`,
         'HTTP-Referer': 'https://simp.ad',
         'X-Title': 'simp.ad',
-      }
+      },
+      timeout: 15000,
     }
   );
   const actualModel = response.data.model || modelId;
