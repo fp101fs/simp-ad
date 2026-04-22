@@ -74,13 +74,13 @@ async function checkRateLimit(req: VercelRequest): Promise<
   return { allowed: true, key };
 }
 
-// Hard wall-clock deadline via AbortController — axios `timeout` in Node.js is
-// only an idle socket timeout and resets whenever data trickles in.
+function rejectAfter(ms: number, label: string): Promise<never> {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms));
+}
+
 async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await axios.post(
+  const response = await Promise.race([
+    axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       { model: modelId, messages: [{ role: 'user', content: buildPrompt(prompt) }] },
       {
@@ -89,16 +89,14 @@ async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
           'HTTP-Referer': 'https://simp.ad',
           'X-Title': 'simp.ad',
         },
-        signal: controller.signal,
       }
-    );
-    const actualModel = response.data.model || modelId;
-    const aiResponse = response.data.choices[0].message.content;
-    const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-    return { parsed: JSON.parse(cleanJson), actualModel, usage: response.data.usage ?? null };
-  } finally {
-    clearTimeout(timer);
-  }
+    ),
+    rejectAfter(10000, modelId),
+  ]);
+  const actualModel = response.data.model || modelId;
+  const aiResponse = response.data.choices[0].message.content;
+  const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
+  return { parsed: JSON.parse(cleanJson), actualModel, usage: response.data.usage ?? null };
 }
 
 const buildPrompt = (prompt: string) =>
