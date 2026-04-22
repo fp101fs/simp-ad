@@ -19,7 +19,6 @@ const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY;
 const OPENROUTER_FALLBACK_API_KEY = process.env.OPENROUTER_FALLBACK_API_KEY;
 
-
 async function checkRateLimit(req: VercelRequest): Promise<
   { allowed: true; key: string | null } |
   { allowed: false; error: string }
@@ -33,6 +32,7 @@ async function checkRateLimit(req: VercelRequest): Promise<
     try {
       const info = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000,
       });
       const email: string = info.data.email;
       if (email === process.env.VITE_ADMIN_EMAIL) {
@@ -63,23 +63,31 @@ async function checkRateLimit(req: VercelRequest): Promise<
   return { allowed: true, key };
 }
 
+// Hard wall-clock deadline via AbortController — axios `timeout` in Node.js is
+// only an idle socket timeout and resets whenever data trickles in.
 async function callOpenRouter(modelId: string, apiKey: string, prompt: string) {
-  const response = await axios.post(
-    'https://openrouter.ai/api/v1/chat/completions',
-    { model: modelId, messages: [{ role: 'user', content: buildPrompt(prompt) }] },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://simp.ad',
-        'X-Title': 'simp.ad',
-      },
-      timeout: 10000,
-    }
-  );
-  const actualModel = response.data.model || modelId;
-  const aiResponse = response.data.choices[0].message.content;
-  const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
-  return { parsed: JSON.parse(cleanJson), actualModel, usage: response.data.usage ?? null };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      { model: modelId, messages: [{ role: 'user', content: buildPrompt(prompt) }] },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://simp.ad',
+          'X-Title': 'simp.ad',
+        },
+        signal: controller.signal,
+      }
+    );
+    const actualModel = response.data.model || modelId;
+    const aiResponse = response.data.choices[0].message.content;
+    const cleanJson = aiResponse.replace(/```json|```/g, '').trim();
+    return { parsed: JSON.parse(cleanJson), actualModel, usage: response.data.usage ?? null };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const buildPrompt = (prompt: string) =>
@@ -119,7 +127,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const modelId = (requestedModel as string) || 'openrouter/free';
   const provider = (requestedProvider as string) || 'openrouter';
 
-
   const FREE_MODELS = [
     'liquid/lfm-2.5-1.2b-instruct:free',
     'google/gemma-3n-e2b-it:free',
@@ -147,35 +154,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const redis = await getRedis();
       modelIndex = (await redis.incr('model:index')) - 1;
-      const MAX_FREE_ATTEMPTS = FREE_MODELS.length;
-      let lastError: any;
+      modelRequested = FREE_MODELS[modelIndex % FREE_MODELS.length];
       let succeeded = false;
+      let lastError: any;
 
-      // Try all free models sequentially
-      for (let attempt = 1; attempt <= MAX_FREE_ATTEMPTS; attempt++) {
-        const freeModel = FREE_MODELS[(modelIndex + attempt - 1) % FREE_MODELS.length];
-        if (attempt === 1) modelRequested = freeModel;
-        console.log(`🚀 Attempt ${attempt}/${MAX_FREE_ATTEMPTS} with model "${freeModel}"...`);
-        try {
-          const { parsed, actualModel, usage } = await callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt);
-          searchTerm = parsed.searchTerm;
-          adCopy = parsed.adCopy;
-          postBody = parsed.postBody;
-          modelUsed = actualModel;
-          tokenUsage = usage;
-          attemptNumber = attempt;
-          console.log(`✅ Ad generated using model: "${actualModel}"`);
-          succeeded = true;
-          break;
-        } catch (err: any) {
-          failedAttempts.push({ model: freeModel, error: err.message });
-          lastError = err;
-          if (attempt < MAX_FREE_ATTEMPTS) {
-            console.log(`❌ Attempt ${attempt} failed (${freeModel}): ${err.message}. Trying next...`);
-          } else {
-            console.log(`❌ Attempt ${attempt} failed: ${err.message}.`);
-          }
-        }
+      // Race all free models in parallel — worst-case latency drops from 30s to 10s
+      try {
+        const raceResults = await Promise.any(
+          FREE_MODELS.map((_, i) => {
+            const freeModel = FREE_MODELS[(modelIndex + i) % FREE_MODELS.length];
+            return callOpenRouter(freeModel, OPENROUTER_API_KEY, prompt)
+              .then(result => ({ ...result, freeModel, attempt: i + 1 }))
+              .catch((err: any) => {
+                failedAttempts.push({ model: freeModel, error: err.message });
+                console.log(`❌ Free model failed (${freeModel}): ${err.message}`);
+                throw err;
+              });
+          })
+        );
+        searchTerm = raceResults.parsed.searchTerm;
+        adCopy = raceResults.parsed.adCopy;
+        postBody = raceResults.parsed.postBody;
+        modelUsed = raceResults.actualModel;
+        tokenUsage = raceResults.usage;
+        attemptNumber = raceResults.attempt;
+        console.log(`✅ Ad generated using model: "${raceResults.actualModel}"`);
+        succeeded = true;
+      } catch (aggErr: any) {
+        lastError = aggErr?.errors?.[aggErr.errors.length - 1] ?? aggErr;
+        console.log(`❌ All ${FREE_MODELS.length} free model attempts failed`);
       }
 
       // Fallback: paid model with fallback key
@@ -192,7 +199,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         postBody = parsed.postBody;
         modelUsed = actualModel;
         tokenUsage = usage;
-        attemptNumber = MAX_FREE_ATTEMPTS + 1;
+        attemptNumber = FREE_MODELS.length + 1;
         console.log(`✅ Ad generated using model: "${actualModel}"`);
       }
 
@@ -225,7 +232,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Pexels image search
     const pexelsRes = await axios.get(
       `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchTerm)}&per_page=1`,
-      { headers: { Authorization: PEXELS_API_KEY || '' } }
+      { headers: { Authorization: PEXELS_API_KEY || '' }, timeout: 8000 }
     );
 
     const imageUrl = pexelsRes.data.photos?.[0]?.src?.large2x || '';
